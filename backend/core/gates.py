@@ -61,6 +61,15 @@ def load_settings(market: Optional[str] = None) -> Dict[str, Any]:
             for gate_name, overrides in market_gates.items():
                 if gate_name in data["gates"]:
                     data["gates"][gate_name] = {**data["gates"][gate_name], **overrides}
+            # Per-market WPS is saved as a top-level absolute threshold
+            # (cfg["wps_threshold"]). Surface it to the WPS gate so it actually
+            # supersedes the base+tightness calculation for this market.
+            wps_abs = cfg.get("wps_threshold")
+            if wps_abs is not None:
+                try:
+                    data.setdefault("gates", {}).setdefault("WPS", {})["abs_threshold"] = float(wps_abs)
+                except (TypeError, ValueError):
+                    pass
     except Exception:
         pass
 
@@ -170,6 +179,7 @@ class Gate:
 
     def __init__(self, settings: Dict[str, Any]):
         cfg = settings["gates"].get(self.name, {})
+        self.cfg: Dict[str, Any] = cfg
         self.tightness: float = cfg.get("tightness", 0.5)
         self.range: float = cfg.get("range", 0.0)
 
@@ -264,8 +274,14 @@ class WpsGate(Gate):
     base_threshold = 10.0
 
     def evaluate(self, ctx: GateContext) -> GateResult:
-        # Treat range as a multiplier on base so it scales naturally
-        effective = self.base_threshold + (self.tightness * self.range * 100)
+        # A per-market absolute threshold (set via the manual WPS control)
+        # supersedes the base+tightness calculation when present.
+        abs_threshold = self.cfg.get("abs_threshold")
+        if abs_threshold is not None:
+            effective = float(abs_threshold)
+        else:
+            # Treat range as a multiplier on base so it scales naturally
+            effective = self.base_threshold + (self.tightness * self.range * 100)
         actual = abs(ctx.wps)
 
         if actual < effective:

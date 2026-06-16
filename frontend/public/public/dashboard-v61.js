@@ -2406,6 +2406,10 @@ function _loadGateMarket(key) {
     ? _num(cfgGates.CONF.tightness, 0)
     : _num((_gateGlobal.CONF || {}).tightness, 0);
   _gateConf = _tightToConfPct(confTight);
+  const alnTight = (cfgGates.TIME4 && cfgGates.TIME4.tightness != null)
+    ? _num(cfgGates.TIME4.tightness, 0)
+    : _num((_gateGlobal.TIME4 || {}).tightness, 0);
+  _gateAln = _tightToAln(alnTight);
   _renderGateControls();
 }
 async function initGateSettings() {
@@ -2424,17 +2428,21 @@ async function initGateSettings() {
     _renderGateControls();
   } catch(e) { _setGateStatus('GATE LOAD FAILED'); }
 }
-// 1. Alignment Required (global TIME4 gate)
+// 1. Alignment Required (per selected market, TIME4 gate)
 async function adjustAlignment(delta) {
+  const market = _gateSel;
+  if (!market) { _setGateStatus('SELECT A MARKET'); return; }
   _gateAln = Math.max(2, Math.min(4, _gateAln + delta));
   _renderGateControls();
   const tight = _alnToTight(_gateAln);
-  _gateTightness.TIME4 = tight;
-  if (_gateGlobal.TIME4) _gateGlobal.TIME4.tightness = tight;
   _setGateStatus('SAVING ALIGNMENT…');
   try {
-    await rpcCall('setGateSetting', { gate: 'TIME4', tightness: tight });
-    _setGateStatus('ALIGNMENT SET: ' + _gateAln + ' GATES');
+    await rpcCall('setGateSetting', { gate: 'TIME4', tightness: tight, market });
+    _gateMarketCfg[market] = _gateMarketCfg[market] || {};
+    _gateMarketCfg[market].gates = _gateMarketCfg[market].gates || {};
+    _gateMarketCfg[market].gates.TIME4 = { ...(_gateMarketCfg[market].gates.TIME4 || {}), tightness: tight };
+    _setGateStatus(_gateMarketLabel(market) + ' ALIGNMENT: ' + _gateAln + ' GATES');
+    refresh();
   } catch(e) { _setGateStatus('SAVE FAILED: ' + e.message); }
 }
 // 2. Market selector
@@ -2837,7 +2845,7 @@ async function resetMarketNow(market) {
     refresh();
   } catch(e) {}
 }
-window.dashboard = { refresh, reset: () => {}, resetMarket, resetMarketNow, triggerCycle, toggleCommandCenter, adjustSL, adjustTrail, adjustTradeAmount, setStake, resetRisk, selectGateMarket, toggleEnginePanel, closeTrade, expandMarket, expandCrypto, expandActiveTrade, togglePause, setAllLive, setAllSim, toggleMarketLifecycle, toggleCategoryLifecycle, connectBroker };
+window.dashboard = { refresh, reset: () => {}, resetMarket, resetMarketNow, triggerCycle, toggleCommandCenter, adjustSL, adjustTrail, adjustTradeAmount, setStake, resetRisk, adjustAlignment, selectGateMarket, adjustGateWps, saveGateWps, adjustGateConf, saveGateConf, toggleEnginePanel, closeTrade, expandMarket, expandCrypto, expandActiveTrade, togglePause, setAllLive, setAllSim, toggleMarketLifecycle, toggleCategoryLifecycle, connectBroker };
 initTabs();
 initRiskParams();
 initGateSettings();

@@ -1332,33 +1332,51 @@
         </div>
       </div>
 
-      <!-- Gate Control (READ-ONLY — editing disabled pending propagation validation) -->
+      <!-- Gate Control -->
       <div>
-        <div class="ctrl-section-label">GATE CONTROL · READ-ONLY</div>
-        <div class="gate-readonly-note">Editing disabled. Re-enabled once UI → DB → engine → gate propagation is verified for Alignment, WPS &amp; CONF.</div>
+        <div class="ctrl-section-label">GATE CONTROL</div>
+        <div class="gate-readonly-note">Settings apply to the selected market and override that market's gate.</div>
 
-        <!-- 1. Alignment Required (global) -->
+        <!-- 1. Select Market (governs all three controls below) -->
         <div class="stepper-row">
-          <span class="stepper-label">Alignment Required<span class="gate-help">Timeframes that must agree (global)</span></span>
-          <span class="stepper-val gate-ro-val" id="gate-aln-display">—</span>
+          <span class="stepper-label">Select Market<span class="gate-help">Sets Alignment, WPS &amp; CONF below</span></span>
+          <select id="gate-market-select" class="gate-select" onchange="window.dashboard && window.dashboard.selectGateMarket(this.value)"></select>
         </div>
 
-        <!-- 2. View Market (read-only selector) -->
+        <!-- 2. Alignment Required (per market) -->
         <div class="stepper-row">
-          <span class="stepper-label">View Market<span class="gate-help">Shows that market's saved values</span></span>
-          <select id="gate-market-select" class="gate-select" onchange="window.dashboard && window.dashboard.selectGateMarket(this.value)"></select>
+          <span class="stepper-label">Alignment Required<span class="gate-help">Timeframes that must agree</span></span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustAlignment(-1)">−</button>
+            <span class="stepper-val" id="gate-aln-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustAlignment(1)">+</button>
+          </div>
         </div>
 
         <!-- 3. WPS Threshold (per market) -->
         <div class="stepper-row">
           <span class="stepper-label">WPS Threshold<span class="gate-help">Min signal strength to trade</span></span>
-          <span class="stepper-val gate-ro-val" id="gate-wps-display">—</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateWps(-1)">−</button>
+            <span class="stepper-val" id="gate-wps-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateWps(1)">+</button>
+          </div>
+        </div>
+        <div class="gate-save-row">
+          <button class="action-btn gate-save-btn" onclick="window.dashboard && window.dashboard.saveGateWps()">Save WPS</button>
         </div>
 
         <!-- 4. CONF Threshold (per market) -->
         <div class="stepper-row">
           <span class="stepper-label">CONF Threshold<span class="gate-help">Min confidence to trade</span></span>
-          <span class="stepper-val gate-ro-val" id="gate-conf-display">—</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateConf(-5)">−</button>
+            <span class="stepper-val" id="gate-conf-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateConf(5)">+</button>
+          </div>
+        </div>
+        <div class="gate-save-row">
+          <button class="action-btn gate-save-btn" onclick="window.dashboard && window.dashboard.saveGateConf()">Save CONF</button>
         </div>
 
         <div id="gate-status" style="font-size:10px;color:var(--dim);letter-spacing:0.08em;min-height:14px;margin-top:6px;"></div>
@@ -1872,6 +1890,6 @@ async function saveCreds() {
 }
 </script>
 
-<script src="/public/dashboard-v61.js?v=20260616b"></script>
+<script src="/public/dashboard-v61.js?v=20260616c"></script>
 </body>
 </html>
