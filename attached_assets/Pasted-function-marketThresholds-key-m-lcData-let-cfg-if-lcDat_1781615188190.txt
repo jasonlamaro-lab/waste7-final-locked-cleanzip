@@ -1,0 +1,69 @@
+function _marketThresholds(key, m, lcData) {
+  let cfg = {};
+  if (lcData && lcData.config) {
+    try {
+      cfg = typeof lcData.config === 'string'
+        ? JSON.parse(lcData.config)
+        : (lcData.config || {});
+    } catch (e) {
+      cfg = {};
+    }
+  }
+
+  const gates = cfg.gates || {};
+
+  // ---- WPS ----
+  // Prefer explicit per-market saved threshold first, then lifecycle config, then gate config.
+  const rawWps =
+    (m && m.wps_threshold != null) ? m.wps_threshold :
+    (cfg.wps_threshold != null) ? cfg.wps_threshold :
+    (gates.WPS && gates.WPS.threshold != null) ? gates.WPS.threshold :
+    (gates.WPS && gates.WPS.required != null) ? gates.WPS.required :
+    10;
+
+  const wps = _num(rawWps, 10);
+
+  // ---- CONF ----
+  // Support either an explicit saved threshold OR the older tightness model.
+  const rawConf =
+    (cfg.conf_threshold != null) ? cfg.conf_threshold :
+    (gates.CONF && gates.CONF.threshold != null) ? gates.CONF.threshold :
+    (gates.CONF && gates.CONF.required != null) ? gates.CONF.required :
+    null;
+
+  let conf;
+  if (rawConf != null) {
+    const n = _num(rawConf, 25);
+    conf = Math.round(n <= 1 ? n * 100 : n);
+  } else {
+    const confTight =
+      (gates.CONF && gates.CONF.tightness != null) ? _num(gates.CONF.tightness, 0) :
+      (_gateTightness && _gateTightness.CONF != null) ? _num(_gateTightness.CONF, 0) :
+      0;
+    conf = Math.round((0.20 + confTight * 0.35) * 100);
+  }
+
+  // ---- ALIGNMENT / ALN / TIME4 ----
+  // Prefer per-market saved requirement first. Only fall back to global if no market-specific value exists.
+  const rawAln =
+    (cfg.alignment_required != null) ? cfg.alignment_required :
+    (cfg.aln_required != null) ? cfg.aln_required :
+    (gates.TIME4 && gates.TIME4.required != null) ? gates.TIME4.required :
+    (gates.ALN && gates.ALN.required != null) ? gates.ALN.required :
+    null;
+
+  let aln;
+  if (rawAln != null) {
+    aln = Math.max(2, Math.min(4, Math.round(_num(rawAln, 3))));
+  } else {
+    const timeTight =
+      (gates.TIME4 && gates.TIME4.tightness != null) ? _num(gates.TIME4.tightness, 0) :
+      (gates.ALN && gates.ALN.tightness != null) ? _num(gates.ALN.tightness, 0) :
+      (_gateTightness && _gateTightness.TIME4 != null) ? _num(_gateTightness.TIME4, 0) :
+      0;
+
+    aln = Math.max(2, Math.min(4, Math.round(2 + timeTight * 2)));
+  }
+
+  return { wps, conf, aln };
+}
