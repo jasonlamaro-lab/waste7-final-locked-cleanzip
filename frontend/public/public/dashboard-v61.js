@@ -2938,7 +2938,9 @@ function renderMarkets(markets, lifecycle) {
     const lc = (lifecycle || {})[key] || {};
     const trade = getOpenTrade(key);
     const th = _marketThresholds(key, m, lc);
-    const signal = trade ? trade.side : (m.signal || m.direction || '—');
+    const rawSignal = m.signal || m.direction || (trade ? trade.side : null);
+    const signal = rawSignal === 'BUY' ? 'BUY' : rawSignal === 'SELL' ? 'SELL' : 'NO SIGNAL';
+    const sigCls = signal === 'BUY' ? 'op-pass' : signal === 'SELL' ? 'op-fail' : 'op-warn';
     const wpsVal = _num(m.wps, 0);
     const confVal = _confPct(m.confidence);
     const alnVal = _num(m.alignment, 0);
@@ -2946,29 +2948,27 @@ function renderMarkets(markets, lifecycle) {
     const confPass = confVal != null && confVal >= th.conf;
     const alnPass = alnVal >= th.aln;
     const perf = _marketPerf(key, lc, stats);
-    const mode = (lc.lifecycle || 'SIM').toUpperCase();
     const wpsArrow = _metricArrow(key, 'wps', wpsVal, wpsPass, signal);
     const confArrow = _metricArrow(key, 'conf', confVal, confPass, signal);
-    const block = wpsPass && confPass && alnPass ? 'READY' : (!wpsPass ? 'WPS' : !confPass ? 'CONF' : !alnPass ? 'ALN' : 'WAIT');
-    const tradePnl = trade ? _tradePnlAud(trade) : 0;
-    const tradeCls = trade ? (tradePnl >= 0 ? 'op-pass' : 'op-fail') : 'op-neutral';
-    return `<div class="op-row" data-market="${key}" onclick="window.dashboard && window.dashboard.expandMarket && window.dashboard.expandMarket('${key}')">
-      <span class="op-market">${def.flag} ${escHtml(def.label)}</span>
-      <span class="op-mode ${mode === 'LIVE' ? 'op-pass' : 'op-neutral'}">${mode}</span>
-      <span class="op-trade ${trade ? 'op-pass' : 'op-neutral'}">TRADE ${trade ? 'YES' : 'NO'}</span>
-      <span class="op-signal ${signal === 'BUY' ? 'op-pass' : signal === 'SELL' ? 'op-fail' : 'op-neutral'}">${escHtml(signal)}</span>
-      <span class="op-price">${_marketPrice(key, m, trade)}</span>
-      ${trade ? `<span class="op-pnl ${tradeCls}">P&L ${tradePnl >= 0 ? '+' : ''}A$${tradePnl.toFixed(2)}</span><span class="op-age">OPEN ${_tradeAge(trade)}</span>` : `<span class="op-block ${block === 'READY' ? 'op-pass' : 'op-fail'}">${block}</span>`}
-      ${_metricCell('WPS', _fmt1(Math.abs(wpsVal)), _fmt1(th.wps), wpsPass, wpsArrow)}
-      ${_metricCell('CONF', _fmt0(confVal), _fmt0(th.conf), confPass, confArrow)}
-      ${_metricCell('ALN', _fmt0(alnVal), _fmt0(th.aln), alnPass, alnPass ? '<span class="op-arrow op-up">✓</span>' : '<span class="op-arrow op-down">↓</span>')}
-      <span class="op-hist ${perf.wr >= 60 ? 'op-pass' : 'op-fail'}">WR ${perf.wr}%</span>
-      <span class="op-hist ${perf.pf >= 2 ? 'op-pass' : perf.pf >= 1 ? 'op-warn' : 'op-fail'}">PF ${perf.pf >= 999 ? '∞' : perf.pf.toFixed(2)}</span>
-      <span class="op-hist">W/L ${perf.wins}/${perf.losses}</span>
-      <span class="op-hist">AVG +${perf.avgW.toFixed(0)} / ${perf.avgL.toFixed(0)}</span>
+    const alnArrow = alnPass ? '<span class="op-arrow op-up">✓</span>' : '<span class="op-arrow op-down">↓</span>';
+    return `<div class="mkt-tile" data-market="${key}" onclick="window.dashboard && window.dashboard.expandMarket && window.dashboard.expandMarket('${key}')">
+      <div class="mkt-tile-head">
+        <span class="mkt-name">${def.flag} ${escHtml(def.label)}</span>
+        <span class="mkt-signal ${sigCls}">${signal}</span>
+        <span class="mkt-price">${_marketPrice(key, m, trade)}</span>
+      </div>
+      <div class="mkt-tile-metrics">
+        ${_metricCell('WPS', _fmt1(Math.abs(wpsVal)), _fmt1(th.wps), wpsPass, wpsArrow)}
+        ${_metricCell('CONF', _fmt0(confVal), _fmt0(th.conf), confPass, confArrow)}
+        ${_metricCell('ALN', _fmt0(alnVal), _fmt0(th.aln), alnPass, alnArrow)}
+      </div>
+      <div class="mkt-tile-perf">
+        <span class="mkt-stat ${perf.wr >= 60 ? 'op-pass' : 'op-fail'}">WR ${perf.wr}%</span>
+        <span class="mkt-stat ${perf.pf >= 2 ? 'op-pass' : perf.pf >= 1 ? 'op-warn' : 'op-fail'}">PF ${perf.pf >= 999 ? '∞' : perf.pf.toFixed(2)}</span>
+      </div>
     </div>`;
   }).join('');
-  container.innerHTML = `<div class="op-section-title">OPEN MARKETS ONLY — ${visible.length}</div><div class="op-table">${rows || '<div class="op-empty">NO OPEN MARKETS</div>'}</div>`;
+  container.innerHTML = `<div class="op-section-title">OPEN MARKETS ONLY — ${visible.length}</div><div class="mkt-grid">${rows || '<div class="op-empty">NO OPEN MARKETS</div>'}</div>`;
 }
 
 function renderOpenPositions() {

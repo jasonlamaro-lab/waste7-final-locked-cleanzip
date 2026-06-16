@@ -873,16 +873,30 @@
     .section-hdr { color:#ffffff !important; padding:6px 12px !important; }
     #markets-section { padding: 4px 8px 8px !important; }
     .op-section-title { color:#fff; font-weight:900; letter-spacing:.14em; font-size:10px; margin:4px 0 6px; }
-    .op-table { display:flex; flex-direction:column; gap:3px; }
-    .op-row, .trade-row {
+    .trade-row {
       display:grid; align-items:center; gap:7px;
       background:#050505; border:1px solid #2b2b2b; border-radius:3px;
       color:#ffffff; font-size:12px; font-weight:900; line-height:1.1;
       padding:5px 7px; min-height:28px; white-space:nowrap; overflow:hidden;
+      grid-template-columns: 120px 46px 72px 100px 112px 100px 90px;
     }
-    .op-row { grid-template-columns: 145px 42px 74px 46px 74px 74px 64px 88px 88px 64px 58px 58px 64px 90px; }
-    .trade-row { grid-template-columns: 120px 46px 72px 100px 112px 100px 90px; }
-    .op-row span, .trade-row span { color:#ffffff; overflow:hidden; text-overflow:ellipsis; }
+    .trade-row span { color:#ffffff; overflow:hidden; text-overflow:ellipsis; }
+
+    .mkt-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:6px; }
+    .mkt-tile {
+      background:#050505; border:1px solid #2b2b2b; border-radius:4px;
+      padding:7px 9px; cursor:pointer; display:flex; flex-direction:column; gap:5px;
+      color:#ffffff; font-size:12px; font-weight:900; line-height:1.15;
+      transition:border-color .12s, background .12s;
+    }
+    .mkt-tile:hover { border-color:#3d3d3d; background:#0a0a0a; }
+    .mkt-tile-head { display:flex; align-items:center; gap:8px; }
+    .mkt-name { color:#ffffff !important; font-weight:900; font-size:13px; white-space:nowrap; }
+    .mkt-signal { font-weight:900; letter-spacing:.04em; }
+    .mkt-price { color:#ffffff !important; margin-left:auto; font-weight:900; white-space:nowrap; }
+    .mkt-tile-metrics { display:flex; gap:5px; }
+    .mkt-tile-perf { display:flex; gap:10px; }
+    .mkt-stat { font-weight:900; white-space:nowrap; }
     .op-market { color:#ffffff !important; font-weight:900; }
     .op-price, .op-age { color:#ffffff !important; }
     .op-metric { padding:2px 5px; border-radius:3px; text-align:center; border:1px solid currentColor; }
@@ -908,7 +922,8 @@
     .optimizer-audit-impact { text-align:right; font-weight:900; }
     .optimizer-audit-time { color:#ffffff; font-size:9px; }
     @media (max-width: 1200px) {
-      .op-row { grid-template-columns: 135px 40px 70px 44px 70px 70px 60px 82px 82px 60px 54px 54px 60px 82px; font-size:11px; gap:5px; }
+      .mkt-grid { gap:5px; }
+      .mkt-tile { font-size:11px; }
       .trade-row { font-size:11px; gap:5px; }
     }
 
