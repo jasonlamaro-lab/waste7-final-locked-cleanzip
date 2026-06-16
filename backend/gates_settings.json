@@ -5,7 +5,7 @@
       "range": 0.0
     },
     "TIME4": {
-      "tightness": 0.25,
+      "tightness": 0.15,
       "range": 1.0
     },
     "TRENDING": {
@@ -13,7 +13,7 @@
       "range": 0.3
     },
     "WPS": {
-      "tightness": 0.1,
+      "tightness": 0.0,
       "range": 0.8
     },
     "CONF": {

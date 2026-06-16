@@ -2794,16 +2794,22 @@ refreshModeATicker();
 // ─────────────────────────────────────────────────────────────────────────────
 let _lastGateTrend = window._lastGateTrend || {};
 window._lastGateTrend = _lastGateTrend;
-let _lastPriceTrend = window._lastPriceTrend || {};
-window._lastPriceTrend = _lastPriceTrend;
-function _priceArrow(key, price) {
-  const v = parseFloat(price);
-  if (!Number.isFinite(v)) return '';
-  const prev = _lastPriceTrend[key];
-  _lastPriceTrend[key] = v;
-  if (prev == null || Math.abs(v - prev) < 1e-9) return '<span class="op-arrow op-flat">→</span>';
-  const up = v > prev;
-  return `<span class="op-arrow ${up ? 'op-up' : 'op-down'}">${up ? '↑' : '↓'}</span>`;
+// Direction of the market over the last 60 minutes, from the engine's 60m
+// timeframe (avg_pct = weighted average % move; dir = BUY/SELL/NEUTRAL).
+// Falls back to the overall market direction. 1 = up, -1 = down, 0 = flat.
+function _trend60Dir(m) {
+  const tfs = (m && m.timeframes) || [];
+  for (const t of tfs) {
+    if (t && t.tf === '60m') {
+      const ap = parseFloat(t.avg_pct);
+      if (Number.isFinite(ap) && ap !== 0) return ap > 0 ? 1 : -1;
+      if (t.dir === 'BUY') return 1;
+      if (t.dir === 'SELL') return -1;
+    }
+  }
+  if (m && m.direction === 'BUY') return 1;
+  if (m && m.direction === 'SELL') return -1;
+  return 0;
 }
 
 function _num(v, fallback = 0) {
@@ -2962,7 +2968,13 @@ function renderMarkets(markets, lifecycle) {
     const wpsArrow = _metricArrow(key, 'wps', wpsVal, wpsPass, signal);
     const confArrow = _metricArrow(key, 'conf', confVal, confPass, signal);
     const alnArrow = alnPass ? '<span class="op-arrow op-up">✓</span>' : '<span class="op-arrow op-down">↓</span>';
-    const priceRaw = (m && (m.price ?? m.current_price ?? m.last_price)) ?? (trade && trade.current_price) ?? null;
+    const priceTxt = _marketPrice(key, m, trade);
+    const trend60 = priceTxt === '—' ? 0 : _trend60Dir(m);
+    const priceColor = trend60 > 0 ? 'op-pass' : trend60 < 0 ? 'op-fail' : 'op-flat';
+    const priceArrow = priceTxt === '—' ? ''
+      : trend60 > 0 ? '<span class="op-arrow op-up">↑</span>'
+      : trend60 < 0 ? '<span class="op-arrow op-down">↓</span>'
+      : '<span class="op-arrow op-flat">→</span>';
     return `<div class="mkt-tile" data-market="${key}" onclick="window.dashboard && window.dashboard.expandMarket && window.dashboard.expandMarket('${key}')">
       <div class="mkt-tile-head">
         <span class="mkt-name">${def.flag} ${escHtml(def.label)}</span>
@@ -2975,7 +2987,7 @@ function renderMarkets(markets, lifecycle) {
       </div>
       <div class="mkt-tile-perf">
         <span class="mkt-stat ${perf.wr >= 60 ? 'op-pass' : 'op-fail'}">WR ${perf.wr}%</span>
-        <span class="mkt-stat mkt-price-stat">${_marketPrice(key, m, trade)} ${_priceArrow(key, priceRaw)}</span>
+        <span class="mkt-stat mkt-price-stat ${priceColor}">${priceTxt} ${priceArrow}</span>
         <span class="mkt-stat ${perf.pf >= 2 ? 'op-pass' : perf.pf >= 1 ? 'op-warn' : 'op-fail'}">PF ${perf.pf >= 999 ? '∞' : perf.pf.toFixed(2)}</span>
       </div>
     </div>`;
