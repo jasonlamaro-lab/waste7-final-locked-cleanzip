@@ -570,6 +570,34 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
+    .gate-help {
+      display: block;
+      margin-top: 2px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+    .gate-select {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 6px;
+      min-width: 120px;
+      cursor: pointer;
+    }
+    .gate-select:hover { border-color: var(--muted); }
+    .gate-save-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 2px;
+      margin-bottom: 4px;
+    }
+    .gate-save-btn { padding: 5px 14px; }
     .stepper-controls {
       display: flex;
       align-items: center;
@@ -1294,44 +1322,53 @@
         </div>
       </div>
 
-      <!-- Manual Gate Controls -->
+      <!-- Gate Control -->
       <div>
-        <div class="ctrl-section-label">GATE GOVERNOR</div>
+        <div class="ctrl-section-label">GATE CONTROL</div>
+
+        <!-- 1. Alignment Required (global) -->
         <div class="stepper-row">
-          <span class="stepper-label">PER-MARKET WPS</span>
+          <span class="stepper-label">Alignment Required<span class="gate-help">Timeframes that must agree</span></span>
           <div class="stepper-controls">
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('WPS', -0.05)">−</button>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustAlignment(-1)">−</button>
+            <span class="stepper-val" id="gate-aln-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustAlignment(1)">+</button>
+          </div>
+        </div>
+
+        <!-- 2. Select Market -->
+        <div class="stepper-row">
+          <span class="stepper-label">Select Market<span class="gate-help">Sets WPS &amp; CONF below</span></span>
+          <select id="gate-market-select" class="gate-select" onchange="window.dashboard && window.dashboard.selectGateMarket(this.value)"></select>
+        </div>
+
+        <!-- 3. WPS Threshold (per market) -->
+        <div class="stepper-row">
+          <span class="stepper-label">WPS Threshold<span class="gate-help">Min signal strength to trade</span></span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateWps(-1)">−</button>
             <span class="stepper-val" id="gate-wps-display">—</span>
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('WPS', 0.05)">+</button>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateWps(1)">+</button>
           </div>
         </div>
+        <div class="gate-save-row">
+          <button class="action-btn gate-save-btn" onclick="window.dashboard && window.dashboard.saveGateWps()">Save WPS</button>
+        </div>
+
+        <!-- 4. CONF Threshold (per market) -->
         <div class="stepper-row">
-          <span class="stepper-label">PER-MARKET CONF</span>
+          <span class="stepper-label">CONF Threshold<span class="gate-help">Min confidence to trade</span></span>
           <div class="stepper-controls">
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('CONF', -0.05)">−</button>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateConf(-5)">−</button>
             <span class="stepper-val" id="gate-conf-display">—</span>
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('CONF', 0.05)">+</button>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateConf(5)">+</button>
           </div>
         </div>
-        <div class="stepper-row">
-          <span class="stepper-label">ALIGNMENT</span>
-          <div class="stepper-controls">
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('TIME4', -0.05)">−</button>
-            <span class="stepper-val" id="gate-time4-display">—</span>
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('TIME4', 0.05)">+</button>
-          </div>
+        <div class="gate-save-row">
+          <button class="action-btn gate-save-btn" onclick="window.dashboard && window.dashboard.saveGateConf()">Save CONF</button>
         </div>
-        <div style="display:flex;gap:6px;margin-top:6px;">
-          <input id="mkt-wps-market" placeholder="market e.g. dax40" style="flex:1;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
-          <input id="mkt-wps-threshold" placeholder="WPS" style="width:54px;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
-          <button class="action-btn" style="padding:5px 7px;" onclick="window.dashboard && window.dashboard.setMarketWps()">SET WPS</button>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:6px;">
-          <input id="mkt-conf-market" placeholder="market e.g. dax40" style="flex:1;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
-          <input id="mkt-conf-threshold" placeholder="CONF" style="width:54px;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
-          <button class="action-btn" style="padding:5px 7px;" onclick="window.dashboard && window.dashboard.setMarketConf()">SET CONF</button>
-        </div>
-        <div id="gate-status" style="font-size:10px;color:var(--dim);letter-spacing:0.08em;min-height:14px;margin-top:4px;"></div>
+
+        <div id="gate-status" style="font-size:10px;color:var(--dim);letter-spacing:0.08em;min-height:14px;margin-top:6px;"></div>
       </div>
 
 

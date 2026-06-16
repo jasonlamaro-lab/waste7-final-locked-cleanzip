@@ -2355,53 +2355,128 @@ async function initRiskParams() {
   } catch(e) {}
 }
 
-// ── Gate governor controls ───────────────────────────────────────────────────
+// ── Gate control panel ───────────────────────────────────────────────────────
+// _gateTightness mirrors the global gate tightness values; it is still consumed
+// by _marketThresholds() to render per-tile WPS/CONF/ALN context.
 const _gateTightness = { WPS: 0, CONF: 0, TIME4: 0 };
-function _gateDisplayId(gate) {
-  return 'gate-' + String(gate).toLowerCase() + '-display';
+
+// Panel state
+let _gateGlobal = {};        // global gate settings { GATE: {tightness, range} }
+let _gateMarketCfg = {};     // market key -> config object from market_state
+let _gateSel = null;         // currently selected market key
+let _gateAln = 3;            // alignment required (2/3/4)
+let _gateWps = 10;           // working WPS threshold for selected market
+let _gateConf = 40;          // working CONF % for selected market
+
+// Alignment number (2/3/4) <-> TIME4 tightness (0/0.5/1.0)
+function _alnToTight(aln) { return (Math.max(2, Math.min(4, aln)) - 2) / 2; }
+function _tightToAln(t) { return Math.max(2, Math.min(4, Math.round(2 + _num(t, 0) * 2))); }
+// CONF % (20..55) <-> CONF tightness (0..1)
+function _tightToConfPct(t) { return Math.round((0.20 + _num(t, 0) * 0.35) * 100); }
+function _confPctToTight(pct) { return Math.max(0, Math.min(1, ((pct / 100) - 0.20) / 0.35)); }
+
+function _gateMarketLabel(key) {
+  const def = EQUITY_MARKETS.find(m => m.key === key);
+  return def ? def.label : String(key || '').toUpperCase();
 }
 function _setGateStatus(msg) {
   const el = document.getElementById('gate-status');
   if (el) el.textContent = msg || '';
 }
+function _populateGateMarketSelect() {
+  const sel = document.getElementById('gate-market-select');
+  if (!sel) return;
+  sel.innerHTML = EQUITY_MARKETS.map(m => `<option value="${m.key}">${m.flag} ${m.label}</option>`).join('');
+  if (_gateSel) sel.value = _gateSel;
+}
 function _renderGateControls() {
-  Object.keys(_gateTightness).forEach(g => {
-    const el = document.getElementById(_gateDisplayId(g));
-    if (el) el.textContent = Math.round((_gateTightness[g] || 0) * 100) + '%';
-  });
+  const aEl = document.getElementById('gate-aln-display');
+  if (aEl) aEl.textContent = _gateAln + (_gateAln === 1 ? ' gate' : ' gates');
+  const wEl = document.getElementById('gate-wps-display');
+  if (wEl) wEl.textContent = _gateWps.toFixed(1);
+  const cEl = document.getElementById('gate-conf-display');
+  if (cEl) cEl.textContent = _gateConf + '%';
+}
+function _loadGateMarket(key) {
+  _gateSel = key;
+  const cfg = _gateMarketCfg[key] || {};
+  _gateWps = cfg.wps_threshold != null ? _num(cfg.wps_threshold, 10) : 10;
+  const cfgGates = cfg.gates || {};
+  const confTight = (cfgGates.CONF && cfgGates.CONF.tightness != null)
+    ? _num(cfgGates.CONF.tightness, 0)
+    : _num((_gateGlobal.CONF || {}).tightness, 0);
+  _gateConf = _tightToConfPct(confTight);
+  _renderGateControls();
 }
 async function initGateSettings() {
   try {
     const r = await rpcCall('getGateSettings');
-    const gates = r && r.settings && r.settings.gates ? r.settings.gates : {};
+    _gateGlobal = (r && r.settings && r.settings.gates) || {};
     ['WPS','CONF','TIME4'].forEach(g => {
-      _gateTightness[g] = parseFloat((gates[g] || {}).tightness || 0);
+      _gateTightness[g] = parseFloat((_gateGlobal[g] || {}).tightness || 0);
     });
+    _gateMarketCfg = {};
+    ((r && r.markets) || []).forEach(m => { _gateMarketCfg[m.market] = m.config || {}; });
+    _gateAln = _tightToAln((_gateGlobal.TIME4 || {}).tightness);
+    if (!_gateSel) _gateSel = EQUITY_MARKETS[0] && EQUITY_MARKETS[0].key;
+    _populateGateMarketSelect();
+    _loadGateMarket(_gateSel);
     _renderGateControls();
   } catch(e) { _setGateStatus('GATE LOAD FAILED'); }
 }
-async function adjustGate(gate, delta) {
-  gate = String(gate || '').toUpperCase();
-  const current = _gateTightness[gate] || 0;
-  const next = Math.max(0, Math.min(1, Math.round((current + delta) * 100) / 100));
-  _gateTightness[gate] = next;
+// 1. Alignment Required (global TIME4 gate)
+async function adjustAlignment(delta) {
+  _gateAln = Math.max(2, Math.min(4, _gateAln + delta));
   _renderGateControls();
-  _setGateStatus('SAVING ' + gate + '...');
+  const tight = _alnToTight(_gateAln);
+  _gateTightness.TIME4 = tight;
+  if (_gateGlobal.TIME4) _gateGlobal.TIME4.tightness = tight;
+  _setGateStatus('SAVING ALIGNMENT…');
   try {
-    await rpcCall('setGateSetting', { gate, tightness: next });
-    _setGateStatus(gate + ' SAVED ' + Math.round(next * 100) + '%');
+    await rpcCall('setGateSetting', { gate: 'TIME4', tightness: tight });
+    _setGateStatus('ALIGNMENT SET: ' + _gateAln + ' GATES');
   } catch(e) { _setGateStatus('SAVE FAILED: ' + e.message); }
 }
-async function setMarketWps() {
-  const m = (document.getElementById('mkt-wps-market') || {}).value || '';
-  const v = (document.getElementById('mkt-wps-threshold') || {}).value || '';
-  const market = m.trim().toLowerCase();
-  const threshold = parseFloat(v);
-  if (!market || !Number.isFinite(threshold)) { _setGateStatus('ENTER MARKET + WPS'); return; }
+// 2. Market selector
+function selectGateMarket(key) {
+  _loadGateMarket(key);
+  _setGateStatus('');
+}
+// 3. WPS Threshold (per selected market)
+function adjustGateWps(delta) {
+  _gateWps = Math.max(0, Math.min(100, Math.round((_gateWps + delta) * 10) / 10));
+  _renderGateControls();
+}
+async function saveGateWps() {
+  const market = _gateSel;
+  if (!market) { _setGateStatus('SELECT A MARKET'); return; }
+  _setGateStatus('SAVING WPS…');
   try {
-    await rpcCall('setMarketWpsThreshold', { market, threshold });
-    _setGateStatus(market + ' WPS SET TO ' + threshold);
-  } catch(e) { _setGateStatus('MARKET WPS FAILED: ' + e.message); }
+    await rpcCall('setMarketWpsThreshold', { market, threshold: _gateWps });
+    _gateMarketCfg[market] = _gateMarketCfg[market] || {};
+    _gateMarketCfg[market].wps_threshold = _gateWps;
+    _setGateStatus(_gateMarketLabel(market) + ' WPS SAVED: ' + _gateWps.toFixed(1));
+    refresh();
+  } catch(e) { _setGateStatus('WPS SAVE FAILED: ' + e.message); }
+}
+// 4. CONF Threshold (per selected market)
+function adjustGateConf(delta) {
+  _gateConf = Math.max(20, Math.min(55, _gateConf + delta));
+  _renderGateControls();
+}
+async function saveGateConf() {
+  const market = _gateSel;
+  if (!market) { _setGateStatus('SELECT A MARKET'); return; }
+  const tight = _confPctToTight(_gateConf);
+  _setGateStatus('SAVING CONF…');
+  try {
+    await rpcCall('setGateSetting', { gate: 'CONF', tightness: tight, market });
+    _gateMarketCfg[market] = _gateMarketCfg[market] || {};
+    _gateMarketCfg[market].gates = _gateMarketCfg[market].gates || {};
+    _gateMarketCfg[market].gates.CONF = { ...(_gateMarketCfg[market].gates.CONF || {}), tightness: tight };
+    _setGateStatus(_gateMarketLabel(market) + ' CONF SAVED: ' + _gateConf + '%');
+    refresh();
+  } catch(e) { _setGateStatus('CONF SAVE FAILED: ' + e.message); }
 }
 
 // ── Engine panel toggle ───────────────────────────────────────────────────────
@@ -2762,7 +2837,7 @@ async function resetMarketNow(market) {
     refresh();
   } catch(e) {}
 }
-window.dashboard = { refresh, reset: () => {}, resetMarket, resetMarketNow, triggerCycle, toggleCommandCenter, adjustSL, adjustTrail, adjustTradeAmount, setStake, resetRisk, adjustGate, setMarketWps, toggleEnginePanel, closeTrade, expandMarket, expandCrypto, expandActiveTrade, togglePause, setAllLive, setAllSim, toggleMarketLifecycle, toggleCategoryLifecycle, connectBroker };
+window.dashboard = { refresh, reset: () => {}, resetMarket, resetMarketNow, triggerCycle, toggleCommandCenter, adjustSL, adjustTrail, adjustTradeAmount, setStake, resetRisk, adjustAlignment, selectGateMarket, adjustGateWps, saveGateWps, adjustGateConf, saveGateConf, toggleEnginePanel, closeTrade, expandMarket, expandCrypto, expandActiveTrade, togglePause, setAllLive, setAllSim, toggleMarketLifecycle, toggleCategoryLifecycle, connectBroker };
 initTabs();
 initRiskParams();
 initGateSettings();
@@ -3040,26 +3115,5 @@ function renderClosedToday() {
   }).join('');
 }
 
-function _renderGateControls() {
-  const timeEl = document.getElementById('gate-time4-display');
-  if (timeEl) {
-    const t = _gateTightness && _gateTightness.TIME4 != null ? _num(_gateTightness.TIME4, 0) : 0;
-    timeEl.textContent = Math.max(2, Math.min(4, Math.round(2 + t * 2))) + ' gates';
-  }
-}
 
 
-async function setMarketConf() {
-  const m = (document.getElementById('mkt-conf-market') || {}).value || '';
-  const v = (document.getElementById('mkt-conf-threshold') || {}).value || '';
-  const market = m.trim().toLowerCase();
-  const confPct = parseFloat(v);
-  if (!market || !Number.isFinite(confPct)) { _setGateStatus('ENTER MARKET + CONF'); return; }
-  const tightness = Math.max(0, Math.min(1, ((confPct / 100) - 0.20) / 0.35));
-  try {
-    await rpcCall('setGateSetting', { market, gate: 'CONF', tightness });
-    _setGateStatus(market + ' CONF SET TO ' + Math.round(confPct));
-    await refresh();
-  } catch(e) { _setGateStatus('MARKET CONF FAILED: ' + e.message); }
-}
-if (window.dashboard) window.dashboard.setMarketConf = setMarketConf;
