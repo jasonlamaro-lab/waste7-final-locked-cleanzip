@@ -1,0 +1,116 @@
+{
+  "summary": "Completed comprehensive testing of Reset All, Guardian, Quality Gates, and Night Manager bug fixes. All 43 backend tests pass (100%). Frontend UI verified with Playwright - Reset All clears state correctly, SEEDING badges appear after reset+start, engine modal shows correct fields.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Engine Detail Modal", "issues": ["Console warning: Missing Description or aria-describedby for DialogContent (accessibility)"]}
+    ]
+  },
+  
+  "passed_tests": [
+    "Reset All endpoint returns 200 with success message",
+    "Reset All clears PF to None (not computed yet)",
+    "Reset All clears accuracy to None",
+    "Reset All clears trades_today to 0",
+    "Reset All clears kitty to $10 (base_unit)",
+    "Reset All clears consecutive_losses to 0",
+    "Reset All sets is_seeding to True",
+    "Reset All sets night_manager_veto to False",
+    "Reset All sets status to STOPPED",
+    "Reset All persists clean state to MongoDB (verified via engine detail endpoint)",
+    "Single engine reset endpoint works",
+    "Single engine reset clears state properly",
+    "Engines in seed mode after Reset All + Start All",
+    "Seeding engines have badge='SEEDING'",
+    "Seeding engines have can_trade=False",
+    "Seed progress increases over time (0% -> 10% -> 20%)",
+    "Guardian tracks consecutive_losses field on all engines",
+    "Paused engines have can_trade=False",
+    "Engines with <5 trades not blocked by quality gates",
+    "Engine summary has night_manager_veto field (boolean)",
+    "Engine detail has night_manager_veto field",
+    "Night Manager run endpoint returns veto_active field",
+    "Engines have current_position_size field",
+    "Reset sets position_size to base unit ($10)",
+    "Full Reset -> Start flow works correctly",
+    "Stats show zero trades and P&L after reset"
+  ],
+  
+  "test_report_links": [
+    "/app/backend/tests/test_reset_guardian_fixes.py",
+    "/app/backend/tests/test_trading_hub.py",
+    "/app/test_reports/pytest/pytest_reset_fixes.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "Consider adding aria-describedby to DialogContent for accessibility compliance"
+  ],
+  
+  "updated_files": [
+    "/app/backend/tests/test_reset_guardian_fixes.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (43/43 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  
+  "seed_data_creation": "None - system uses simulated price data",
+  
+  "retest_needed": false,
+  
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Bug fixes for Reset All, Guardian, Quality Gates, and Night Manager all verified working. Key behaviors: (1) Reset All clears PF/accuracy/trades/kitty/consecutive_losses and sets is_seeding=True, (2) Reset persists to MongoDB, (3) Guardian clears recovery counters on reset, (4) Seed mode lasts 20 ticks (~40 seconds), (5) Quality gates arm after 5 trades, (6) Night Manager veto field exists and affects position sizing. IB Broker falls back to MOCK mode.",
+  
+  "mocked_api": {
+    "Interactive Brokers": "Falls back to mock order execution (broker_client.py)"
+  },
+  
+  "features_verified": {
+    "reset_all": {
+      "status": "WORKING",
+      "clears": ["pf", "accuracy", "trades_today", "kitty", "consecutive_losses", "night_manager_veto"],
+      "sets": {"is_seeding": true, "status": "STOPPED", "kitty": 10, "position_size": 10}
+    },
+    "mongodb_persistence": {
+      "status": "WORKING",
+      "verified_via": "engine detail endpoint after reset"
+    },
+    "guardian": {
+      "status": "WORKING",
+      "max_consecutive_losses": 5,
+      "recovery_counters_cleared_on_reset": true
+    },
+    "seed_mode": {
+      "status": "WORKING",
+      "window": 20,
+      "badge": "SEEDING",
+      "can_trade": false
+    },
+    "quality_gates": {
+      "status": "WORKING",
+      "min_trades_for_gating": 5
+    },
+    "night_manager_veto": {
+      "status": "WORKING",
+      "field_exists_in_summary": true,
+      "field_exists_in_detail": true,
+      "run_endpoint_returns_veto_active": true
+    },
+    "position_sizing": {
+      "status": "WORKING",
+      "base_unit": 10,
+      "respects_night_manager_veto": true
+    }
+  }
+}

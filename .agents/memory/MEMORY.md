@@ -1,0 +1,5 @@
+- [Trading app setup](trading-app-setup.md) — FastAPI serves static dashboard + /api on port 5000; deps subset only; live feed uses EODHD intraday (not yfinance); dashboard static grid needs renderStaticMarketGrid+STATIC_GRID_MAP, not just renderMarkets.
+- [VM deployment silence](deployment-vm-silence.md) — silent VM + no restart logs = stopped/suspended (likely credits), NOT a crash; don't assume OOM (dev RSS ~150MB, stable). Check restart logs + dev RSS first.
+- [EODHD coverage](eodhd-coverage.md) — 7 stale markets (nzx50/mib/nikkei225/sensex/set/tadawul/jse) are an EODHD plan coverage limit, NOT a bug; symbols are correct, native exchanges just aren't in the plan.
+- [EODHD daily quota](eodhd-quota.md) — whole dashboard freezing mid-day (ALL markets 0 prices, cycles still firing) = EODHD 100k/day limit hit (HTTP 402); resets 00:00 UTC; 24/7 polling of 193 syms overruns it.
+- [Yahoo feed](yahoo-feed.md) — live feed migrated EODHD→Yahoo (yfinance) to escape the quota; free, batch yf.download, covers all 25 markets; pip needs --break-system-packages --target=.pythonlibs.

@@ -1,0 +1,111 @@
+fetch_all_equity_batch (backend)
+This replaces the yfinance logic with EODHD batch calls.
+
+🔥 Drop‑in replacement function
+Put this inside your backend data layer (where fetch_all_equity_batch currently lives):
+
+python
+import os
+import httpx
+
+EODHD_API_KEY = os.getenv("EODHD_API_KEY")
+
+# Map your tickers to EODHD symbols
+INDEX_MAP = {
+    "nasdaq100": "NDX.INDX",
+    "sp500": "GSPC.INDX",
+    "dowjones": "DJI.INDX",
+    "tsxcomp": "GSPTSE.INDX",
+    "bovespa": "BVSP.INDX",
+    "ftse100": "FTSE.INDX",
+    "dax40": "GDAXI.INDX",
+    "cac40": "FCHI.INDX",
+    "eurostoxx50": "STOXX50E.INDX",
+    "smi": "SSMI.INDX",
+    "aex": "AEX.INDX",
+    "ibex35": "IBEX.INDX",
+    "nikkei225": "N225.INDX",
+    "asx200": "AXJO.INDX",
+    "hangseng": "HSI.INDX",
+    "shanghaicomp": "SSEC.INDX",
+    "sensex": "BSESN.INDX",
+    "kospi": "KS11.INDX",
+    "tadawul": "TASI.INDX",
+    "jsetop40": "JTOPI.INDX",
+}
+
+async def fetch_all_equity_batch():
+    """Fetch all index prices for the dashboard using EODHD."""
+    results = {}
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        for key, symbol in INDEX_MAP.items():
+            url = f"https://eodhd.com/api/real-time/{symbol}"
+            params = {
+                "api_token": EODHD_API_KEY,
+                "fmt": "json",
+            }
+
+            try:
+                r = await client.get(url, params=params)
+                r.raise_for_status()
+                data = r.json()
+
+                price = data.get("close")
+                change = data.get("change")
+                change_p = data.get("change_p")
+
+                # ALN arrow
+                if change is None:
+                    aln = "→"
+                elif change > 0:
+                    aln = "↑"
+                elif change < 0:
+                    aln = "↓"
+                else:
+                    aln = "→"
+
+                results[key] = {
+                    "price": price,
+                    "change": change,
+                    "change_p": change_p,
+                    "aln": aln,
+                }
+
+            except Exception:
+                results[key] = {
+                    "price": None,
+                    "change": None,
+                    "change_p": None,
+                    "aln": "→",
+                }
+
+    return results
+✅ 2. Patch your /api/batch endpoint
+Wherever your backend exposes the batch fetcher, update it to:
+
+python
+@app.get("/api/batch")
+async def batch():
+    data = await fetch_all_equity_batch()
+    return data
+This is what the dashboard already calls.
+No front‑end changes needed for the API shape.
+
+✅ 3. Dashboard cards will now populate automatically
+Because your dashboard already does:
+
+Code
+fetch("/api/batch")
+…and expects:
+
+Code
+{
+  "nasdaq100": { price, change, change_p, aln },
+  "sp500": { ... },
+  ...
+}
+This patch feeds the exact structure the UI expects.
+
+✅ 4. No IG changes required
+Blocking IG username/password is separate and does not affect this feed.

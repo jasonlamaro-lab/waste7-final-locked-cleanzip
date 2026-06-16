@@ -1,0 +1,99 @@
+{
+  "summary": "Comprehensive testing of new features: ALERTS, EDITABLE SETTINGS, and TROUBLESHOOTING. All 15 features verified successfully. Backend API tests (13/13 passed), Frontend UI tests verified via Playwright.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": [
+    "Crypto tab shows all 24 engines under ONLINE — STEADY group (no warming up for crypto)",
+    "Exchanges tab shows 'All markets closed' since it's the weekend (closed markets hidden)",
+    "Expanding an engine row shows 5 columns: Why?, Performance, Regime, Settings, Promotion",
+    "WHY? column shows gate rows with current/needed values (R-Fit, Conf, Tier) in red/green",
+    "WHY? column shows 'Last Signal' and 'Last Trade' info",
+    "SETTINGS column shows SL%, TS%, Sig Prob as clickable editable values",
+    "SETTINGS column has PAUSE and RESET buttons",
+    "Clicking a setting value opens an inline edit input",
+    "Entering a value and pressing Enter saves it (fires POST /api/engines/{id}/nudge)",
+    "PAUSE button fires nudge API with pause:true",
+    "RESET button fires POST /api/engines/{id}/reset",
+    "ALERTS counter in department summary bar shows count of engines with issues",
+    "Red pulsing dot appears next to engines with alerts (NO TREND status visible on MATIC)",
+    "Department summary bar shows ACTIVE/READY/SCANNING/ALERTS/P&L/W-L",
+    "WebSocket data includes gates, last_signal_info, last_trade_ts, alerts fields"
+  ],
+
+  "test_report_links": [
+    "/app/backend/tests/test_alerts_settings_troubleshooting.py",
+    "/app/test_reports/pytest/pytest_alerts_settings.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [],
+
+  "updated_files": [
+    "/app/backend/tests/test_alerts_settings_troubleshooting.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "100% (all 15 features verified)"
+  },
+
+  "seed_data_creation": "None - system uses live WebSocket data from backend",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "All new features working correctly. Key implementation details: (1) MarketsView.jsx has 5-column expandable dropdown (Why?, Performance, Regime, Settings, Promotion), (2) EditableParam component handles inline editing with OK button, (3) DeptSummary shows ALERTS counter when alertCount > 0, (4) Backend base_engine.py has _get_gates() method returning gate thresholds vs current values, (5) last_signal_info and last_trade_ts tracked in engine state, (6) Nudge API at POST /api/engines/{id}/nudge accepts stop_loss_pct, trailing_stop_pct, signal_prob, pause, resume params, (7) Reset API at POST /api/engines/{id}/reset resets engine state.",
+
+  "features_verified": {
+    "alerts": {
+      "status": "WORKING",
+      "description": "ALERTS counter in dept summary bar, red pulsing dot on engines with issues (stopped/error, 5+ consecutive losses, health < 30)"
+    },
+    "editable_settings": {
+      "status": "WORKING",
+      "description": "SL%, TS%, Sig Prob clickable to edit, inline input with OK button, fires POST /api/engines/{id}/nudge"
+    },
+    "troubleshooting": {
+      "status": "WORKING",
+      "description": "WHY? column shows gate values (R-Fit, Conf, Tier) as current vs needed in red/green, Last Signal info, Last Trade timestamp"
+    },
+    "pause_resume": {
+      "status": "WORKING",
+      "description": "PAUSE button fires nudge with pause:true, changes to RESUME button when paused"
+    },
+    "reset": {
+      "status": "WORKING",
+      "description": "RESET button fires POST /api/engines/{id}/reset"
+    },
+    "crypto_always_online": {
+      "status": "WORKING",
+      "description": "Crypto engines (type='coin') shown under ONLINE — STEADY, never in WARMING UP group"
+    },
+    "closed_markets_hidden": {
+      "status": "WORKING",
+      "description": "Exchange markets show 'All markets closed' on weekends, no engine rows displayed"
+    },
+    "websocket_data": {
+      "status": "WORKING",
+      "description": "WebSocket includes gates, last_signal_info, last_trade_ts, alerts fields in engine summary"
+    }
+  },
+
+  "api_endpoints_tested": {
+    "GET /api/engines/summary": "Returns all engine summaries with gates, last_signal_info, last_trade_ts, alerts",
+    "POST /api/engines/{id}/nudge": "Updates stop_loss_pct, trailing_stop_pct, signal_prob, pause, resume",
+    "POST /api/engines/{id}/reset": "Resets engine state"
+  }
+}

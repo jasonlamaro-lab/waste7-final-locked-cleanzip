@@ -1,0 +1,108 @@
+# backend/server.py
+import os
+import httpx
+from pathlib import Path
+from fastapi import FastAPI, APIRouter
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+
+app = FastAPI()
+router = APIRouter()
+
+# Your EODHD API key from Replit secrets
+EODHD_API_KEY = os.getenv("EODHD_API_KEY")
+
+# All index symbols for your dashboard
+INDEX_MAP = {
+    "nasdaq100": "NDX.INDX",
+    "sp500": "GSPC.INDX",
+    "dowjones": "DJI.INDX",
+    "tsxcomp": "GSPTSE.INDX",
+    "bovespa": "BVSP.INDX",
+    "ftse100": "FTSE.INDX",
+    "dax40": "GDAXI.INDX",
+    "cac40": "FCHI.INDX",
+    "eurostoxx50": "STOXX50E.INDX",
+    "smi": "SSMI.INDX",
+    "aex": "AEX.INDX",
+    "ibex35": "IBEX.INDX",
+    "nikkei225": "N225.INDX",
+    "asx200": "AXJO.INDX",
+    "hangseng": "HSI.INDX",
+    "shanghaicomp": "SSEC.INDX",
+    "sensex": "BSESN.INDX",
+    "kospi": "KS11.INDX",
+    "tadawul": "TASI.INDX",
+    "jsetop40": "JTOPI.INDX",
+}
+
+# Health check
+@router.get("/api/health")
+async def health():
+    return {"status": "ok"}
+
+# LIVE INDEX ENDPOINT FOR MARKET CARDS
+@router.get("/api/live/{market}")
+async def get_live_market(market: str):
+    if not EODHD_API_KEY:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "EODHD_API_KEY not configured"},
+        )
+
+    symbol = INDEX_MAP.get(market.lower())
+    if not symbol:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"Unknown market '{market}'"},
+        )
+
+    url = f"https://eodhd.com/api/real-time/{symbol}"
+    params = {"api_token": EODHD_API_KEY, "fmt": "json"}
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(url, params=params)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Failed to fetch from EODHD", "detail": str(e)},
+        )
+
+    price = data.get("close")
+    change = data.get("change")
+    change_p = data.get("change_p")
+
+    # ALN arrow logic
+    if change is None:
+        aln = "→"
+    elif change > 0:
+        aln = "↑"
+    elif change < 0:
+        aln = "↓"
+    else:
+        aln = "→"
+
+    return {
+        "market": market,
+        "symbol": symbol,
+        "price": price,
+        "change": change,
+        "change_p": change_p,
+        "aln": aln,
+    }
+
+app.include_router(router)
+
+# SERVE FRONTEND (public or build)
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "public"
+if not FRONTEND_DIR.exists():
+    FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "build"
+
+app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+
+@app.get("/")
+async def index():
+    return FileResponse(FRONTEND_DIR / "index.html")

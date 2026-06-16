@@ -1,0 +1,88 @@
+{
+  "summary": "Completed comprehensive testing of Trade Eligibility Gate System. All 33 backend tests pass (100%). Frontend UI verified with Playwright - eligibility badges, regime detection, sorting, and stats all working correctly.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "Regime detection: TRENDING_UP/TRENDING_DOWN/CHOPPY/REVERSAL/UNKNOWN/SCALPER derived from price data",
+    "Eligibility gates: market open, regime trending, rfit >= 0.40, confidence >= 0.55, tier >= 3",
+    "Badge assignment: ACTIVE (green), NO TREND (grey), LOW FITNESS/CONF/TIER (amber), CLOSED (red)",
+    "Engine sorting: trending engines appear first, then open/closed, then by R.Fit",
+    "P&L formula: gross = dir_sign * (exit - entry) * quantity * multiplier verified",
+    "Stats include trending (13) and eligible (3) counts",
+    "Scalpers bypass regime check - always ACTIVE when open",
+    "Closed markets (24 stock engines on Saturday) correctly blocked from trading",
+    "Engine detail modal shows Eligibility, Regime, R.Fit, Confidence, Tier",
+    "Filter tabs work: All 50, Open Only, Markets, Crypto, Scalpers",
+    "Show Closed Markets checkbox toggles visibility of closed market engines",
+    "Live Trades panel shows trades with entry/exit prices and P&L",
+    "Performance Ranking shows top 5 and bottom 5 performers"
+  ],
+  
+  "test_report_links": [
+    "/app/backend/tests/test_eligibility_gates.py",
+    "/app/backend/tests/test_trading_hub.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [],
+  
+  "updated_files": [
+    "/app/backend/tests/test_eligibility_gates.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (33/33 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  
+  "seed_data_creation": "None - system uses simulated price data for regime detection",
+  
+  "retest_needed": false,
+  
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Trade Eligibility Gate System fully implemented and tested. 50 engines running with regime detection. Currently Saturday so 24 stock market engines show CLOSED badge. Crypto engines (24 coins + 2 scalpers) are always open. Only engines with TRENDING regime + sufficient R.Fit/confidence/tier can trade. IB Broker falls back to MOCK mode. WebSocket provides real-time updates including trending/eligible counts.",
+  
+  "mocked_api": {
+    "Interactive Brokers": "Falls back to mock order execution (broker_client.py)"
+  },
+  
+  "features_verified": {
+    "regime_detection": {
+      "status": "WORKING",
+      "regimes_found": ["TRENDING_UP", "TRENDING_DOWN", "CHOPPY", "REVERSAL", "UNKNOWN", "SCALPER"]
+    },
+    "eligibility_gates": {
+      "status": "WORKING",
+      "gates": ["market_open", "regime_trending", "rfit >= 0.40", "confidence >= 0.55", "tier >= 3"]
+    },
+    "badges": {
+      "status": "WORKING",
+      "badges_found": ["ACTIVE", "NO TREND", "LOW CONF", "CLOSED"]
+    },
+    "sorting": {
+      "status": "WORKING",
+      "order": "trending first, then open/closed, then R.Fit descending"
+    },
+    "pnl_formula": {
+      "status": "WORKING",
+      "formula": "gross = dir_sign * (exit - entry) * quantity * multiplier"
+    },
+    "stats_bar": {
+      "status": "WORKING",
+      "new_fields": ["Trending count", "Eligible count"]
+    }
+  }
+}

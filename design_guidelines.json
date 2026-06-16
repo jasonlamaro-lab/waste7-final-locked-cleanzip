@@ -1,0 +1,103 @@
+{
+  "theme": "dark",
+  "archetype": "7 (Electric & Neon / Terminal Quant)",
+  "typography": {
+    "font_family_primary": "JetBrains Mono",
+    "font_family_secondary": "JetBrains Mono",
+    "heading_strategy": "JetBrains Mono with varying weights. Uppercase for section headers. Tracking tight.",
+    "hierarchy": {
+      "h1": "text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white",
+      "h2": "text-xl sm:text-2xl font-bold uppercase tracking-tight text-white/90",
+      "h3": "text-base sm:text-lg font-semibold uppercase tracking-widest text-white/70",
+      "h4": "text-sm font-medium uppercase tracking-[0.2em] text-white/50",
+      "body": "text-xs sm:text-sm font-normal text-white/70 leading-relaxed",
+      "small_labels": "text-[10px] sm:text-xs font-mono uppercase tracking-widest text-white/40"
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#050505",
+      "surface": "#0A0A0A",
+      "surface_elevated": "#121212",
+      "surface_highlight": "#1A1A1A"
+    },
+    "border": {
+      "default": "#262626",
+      "subtle": "#171717",
+      "highlight": "#404040",
+      "neon_green": "rgba(16, 185, 129, 0.3)",
+      "neon_red": "rgba(244, 63, 94, 0.3)",
+      "gold": "rgba(234, 179, 8, 0.3)"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "rgba(255, 255, 255, 0.7)",
+      "muted": "rgba(255, 255, 255, 0.4)",
+      "neon_green": "#34D399",
+      "neon_red": "#FB7185",
+      "neon_cyan": "#22D3EE",
+      "gold": "#FDE047"
+    },
+    "status": {
+      "success": "#10B981",
+      "danger": "#F43F5E",
+      "warning": "#F59E0B",
+      "info": "#0EA5E9",
+      "god_mode": "#EAB308"
+    }
+  },
+  "layout_and_spacing": {
+    "strategy": "Control Room Grid (Dense)",
+    "container_padding": "p-4 md:p-6",
+    "gap_system": {
+      "macro": "gap-4 md:gap-6",
+      "micro": "gap-1 md:gap-2"
+    },
+    "grid_structure": "grid-cols-1 md:grid-cols-12",
+    "columns": {
+      "left": "col-span-1 md:col-span-3 lg:col-span-4",
+      "center": "col-span-1 md:col-span-6 lg:col-span-5",
+      "right": "col-span-1 md:col-span-3 lg:col-span-3"
+    }
+  },
+  "surfaces_and_borders": {
+    "cards": "bg-[#0A0A0A] border border-[#262626] rounded-none overflow-hidden",
+    "headers": "bg-[#050505] border-b border-[#262626] sticky top-0 z-50",
+    "inputs": "bg-[#121212] border border-[#262626] rounded-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 text-white",
+    "buttons": "bg-[#1A1A1A] border border-[#333333] hover:border-cyan-500 hover:text-cyan-400 transition-colors rounded-none",
+    "special_effects": "Use 1px borders heavily to create 'scanline' or 'blueprint' grid effects. Use inset shadows or drop-shadows with neon colors sparingly for 'active' states."
+  },
+  "icons_and_assets": {
+    "library": "@phosphor-icons/react",
+    "style": "duotone or regular, keep it angular/technical",
+    "image_urls": [],
+    "notes_on_media": "DO NOT USE PLACEHOLDER IMAGES. This is a pure data/terminal dashboard. Rely entirely on typography, Phosphor icons, and CSS borders/colors for visual interest."
+  },
+  "components_strategy": {
+    "market_perf_grid": "Dense bento grid (e.g., grid-cols-4 or grid-cols-6 inside the container). Each bot is a tiny square with just symbol, color-coded price/status, and minimal padding. Use border-collapse style.",
+    "god_overview": "Elevated visual hierarchy. Use Gold/Yellow accents. The 'Golden Rules' should look like terminal system prompts (e.g., '> TARGET: 90% WR').",
+    "supervisor_status": "List or 2-column grid. Each supervisor shows their engine count and active status. Use glowing dot indicators (w/ animate-pulse).",
+    "open_closed_positions": "Tabular layout. No rounded corners on rows. Zebra striping with #0A0A0A and #121212. Mono-spaced numbers meticulously aligned right.",
+    "hell_log": "Terminal output style. Red text (`text-rose-500`). Use typewriter effect or simple static list with timestamp `[14:02:44] BOT_WIPED: SOL-USD`."
+  },
+  "motion_and_interaction": {
+    "hover": "Subtle border color change (e.g., hover:border-white/40). Buttons should have sharp, immediate transitions.",
+    "active_data": "Use 'animate-pulse' on a small colored dot to indicate live data feeds.",
+    "loading": "ASCII spinners (/, -, \\, |) or flashing block cursors instead of standard circular spinners.",
+    "transitions": "Keep animations under 200ms. Snappy and mechanical."
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure all text against #0A0A0A meets >4.5:1 ratio. Muted text must not drop below #666666.",
+    "testing": "All interactive elements and key data points MUST have descriptive `data-testid` attributes (e.g., `data-testid='bot-status-btc'`, `data-testid='god-wr-metric'`)."
+  },
+  "instructions_to_main_agent": [
+    "Install `@phosphor-icons/react` for icons.",
+    "Use ONLY `JetBrains Mono` for the entire application. Apply it globally in Tailwind.",
+    "No rounded corners anywhere (`rounded-none`). This is a rigid, terminal-style interface.",
+    "Implement the 3-column layout strictly using the CSS Grid definitions provided.",
+    "Do NOT add any stock photos or placeholder images. Use pure data, CSS, and typography to build the aesthetic.",
+    "Build the 'Hell Log' with a stark, red-tinted terminal console look.",
+    "For the 48 bots grid (MarketPerfGrid), make it extremely dense. Pack the information tightly like a Bloomberg terminal.",
+    "Ensure the header displays 'God' level metrics prominently."
+  ]
+}

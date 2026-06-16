@@ -1,0 +1,114 @@
+{
+  "summary": "Comprehensive testing of gate overrides, commission rates, 60% WR cutoff, and self-improvement features. All 14 backend tests passed (100%). All 12 frontend features verified via Playwright.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Settings column",
+        "issues": ["'Gates' section header text not visible (but all gate params ARE visible and editable)"]
+      }
+    ]
+  },
+
+  "passed_tests": [
+    "POST /api/engines/{id}/nudge accepts gate overrides: rfit_min, conf_min, min_tier, wps_gate, band_cap",
+    "Gate overrides are persisted and returned in the response",
+    "Gate overrides are returned in engine summary under 'gates' and 'gate_overrides' fields",
+    "Gates field shows current vs needed values with needed reflecting overrides",
+    "Commission rates: crypto symbols get 0.05% per side (0.0005)",
+    "Commission rates: exchange symbols get 0.1% per side (0.001)",
+    "Crypto commission is exactly half of exchange commission",
+    "60% WR hard cutoff constant (OPERATIONAL_WR_CUTOFF = 0.60) exists in live_promotion.py",
+    "_meets_entry() correctly enforces 60% floor and 65%/1.5 entry threshold",
+    "Settings dropdown shows Trade Params section (SL%, TS%, Sig Prob, Dir Bias)",
+    "Settings dropdown shows Gates section (R-Fit Min, Conf Min, Tier Min, WPS Gate, Band Cap)",
+    "Clicking a gate value opens inline edit input",
+    "Entering value and pressing Enter saves via nudge API",
+    "WHY? column shows gate pass/fail status with current vs needed values",
+    "Band Cap gate row appears in WHY? column",
+    "Engines with READY status show 'READY TO TRADE' in green in WHY? column",
+    "Engines with WEAK FIT status show failing gates in red in WHY? column",
+    "PAUSE button works (fires nudge with pause:true)",
+    "RESET button works (fires POST /api/engines/{id}/reset)",
+    "Expanded dropdown shows all 5 columns correctly (WHY?, PERFORMANCE, REGIME, SETTINGS, PROMOTION)"
+  ],
+
+  "test_report_links": [
+    "/app/backend/tests/test_gate_overrides_commission.py",
+    "/app/test_reports/pytest/pytest_gate_overrides.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [],
+
+  "updated_files": [
+    "/app/backend/tests/test_gate_overrides_commission.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (all 12 features verified)"
+  },
+
+  "seed_data_creation": "None - system uses live WebSocket data from backend",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Gate overrides feature fully implemented and tested. Key implementation details: (1) POST /api/engines/{id}/nudge accepts rfit_min, conf_min, min_tier, wps_gate, band_cap params, (2) gate_overrides stored in engine.local_state['gate_overrides'], (3) _get_gates() in base_engine.py uses overrides when set, (4) Commission rates: crypto 0.05% (CRYPTO_COMMISSION_RATE=0.0005), exchange 0.1% (DEFAULT_COMMISSION_RATE=0.001), (5) 60% WR cutoff in live_promotion.py (OPERATIONAL_WR_CUTOFF=0.60), (6) Self-improvement in _self_improve() adapts gate_overrides based on win rate tiers.",
+
+  "features_verified": {
+    "gate_overrides_api": {
+      "status": "WORKING",
+      "description": "POST /api/engines/{id}/nudge accepts and persists gate overrides (rfit_min, conf_min, min_tier, wps_gate, band_cap)"
+    },
+    "gates_in_summary": {
+      "status": "WORKING",
+      "description": "Engine summary includes 'gates' (current vs needed) and 'gate_overrides' fields"
+    },
+    "commission_rates": {
+      "status": "WORKING",
+      "description": "Crypto: 0.05% per side (0.0005), Exchange: 0.1% per side (0.001)"
+    },
+    "wr_cutoff": {
+      "status": "WORKING",
+      "description": "60% WR hard floor enforced in _meets_entry() and record_real_trade()"
+    },
+    "settings_dropdown": {
+      "status": "WORKING",
+      "description": "Shows Trade Params (SL%, TS%, Sig Prob, Dir Bias) AND Gates (R-Fit Min, Conf Min, Tier Min, WPS Gate, Band Cap)"
+    },
+    "inline_edit": {
+      "status": "WORKING",
+      "description": "Clicking gate value opens inline edit input, Enter saves via nudge API"
+    },
+    "why_column": {
+      "status": "WORKING",
+      "description": "Shows gate pass/fail with current vs needed values, READY TO TRADE for OK engines, failing gates in red for WEAK FIT"
+    },
+    "pause_reset": {
+      "status": "WORKING",
+      "description": "PAUSE and RESET buttons work correctly"
+    },
+    "five_columns": {
+      "status": "WORKING",
+      "description": "Expanded dropdown shows WHY?, PERFORMANCE, REGIME, SETTINGS, PROMOTION columns"
+    }
+  },
+
+  "api_endpoints_tested": {
+    "POST /api/engines/{id}/nudge": "Accepts stop_loss_pct, trailing_stop_pct, signal_prob, direction_bias, rfit_min, conf_min, min_tier, wps_gate, band_cap, pause, resume",
+    "POST /api/engines/{id}/reset": "Resets engine state",
+    "GET /api/engines/summary": "Returns all engine summaries with gates, gate_overrides fields",
+    "GET /api/engines/{id}": "Returns engine detail with config"
+  }
+}

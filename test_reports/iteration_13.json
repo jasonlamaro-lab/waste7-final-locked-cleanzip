@@ -1,0 +1,104 @@
+{
+  "summary": "Comprehensive testing of new trading engine features: 74 engines, auto-compounding position sizing, toggle-trade endpoint, super bot multiplier. All 19 backend tests passed (100%). All frontend features verified via Playwright.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": [
+    "GET /api/ returns engines: 74",
+    "GET /api/engines/summary returns 74 engine objects",
+    "Engine type breakdown: 24 market + 24 coin + 2 scalper + 24 bot = 74",
+    "GET /api/global returns compounded_position_size field",
+    "compounded_position_size equals max(5, kitty * 0.05) - verified with kitty=$50.09, size=$5",
+    "position_size field equals compounded_position_size",
+    "PUT /api/engines/bot_01/toggle-trade with {enabled: false} returns trade_enabled: false",
+    "PUT /api/engines/bot_01/toggle-trade with {enabled: true} returns trade_enabled: true",
+    "toggle-trade state persists and appears in engine summary",
+    "PUT /api/engines/invalid_engine/toggle-trade returns 404",
+    "Bot engines have type='bot'",
+    "Bot engines have mode='scalper'",
+    "Bot engines include trade_enabled field (boolean)",
+    "Bot engines include super_bot_multiplier field (1, 2, or 3)",
+    "BTC and ETH scalper engines exist with type='scalper'",
+    "Scalper engines have mode='scalper'",
+    "Scalper engines include trade_enabled field",
+    "Total bots (2 scalpers + 24 exchange bots) = 26",
+    "GET /api/ returns healthy status"
+  ],
+
+  "frontend_features_verified": {
+    "bots_tab": {
+      "status": "WORKING",
+      "description": "Bots tab shows 26 engines (2 crypto scalpers + 24 exchange bots)"
+    },
+    "toggle_buttons": {
+      "status": "WORKING",
+      "description": "Each bot row has an ON/OFF toggle button that works"
+    },
+    "bots_summary_bar": {
+      "status": "WORKING",
+      "description": "Shows TOTAL 26, TRADING count, ENABLED count, W/L, P&L, SIZE $5 (10%)"
+    },
+    "topbar_position_size": {
+      "status": "WORKING",
+      "description": "TopBar shows SIZE $5 auto SWING (auto-compounded position size)"
+    },
+    "section_headers": {
+      "status": "WORKING",
+      "description": "Two sections visible: 'Crypto Scalpers' (2) and 'Exchange Scalper Bots' (24)"
+    }
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_trading_engine_features.py",
+    "/app/test_reports/pytest/pytest_trading_features.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [],
+
+  "updated_files": [
+    "/app/backend/tests/test_trading_engine_features.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (19/19 tests passed)",
+    "frontend": "100% (all 5 features verified)"
+  },
+
+  "seed_data_creation": "None - system uses live WebSocket data from backend",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "All new features working correctly. Key implementation details: (1) 74 engines total: 24 market + 24 coin + 2 crypto scalpers + 24 exchange bots, (2) Auto-compounding: compute_position_size() returns max(5, kitty * 0.05), (3) Toggle-trade: PUT /api/engines/{id}/toggle-trade with {enabled: bool}, (4) Engine summary includes trade_enabled and super_bot_multiplier fields, (5) Frontend Bots tab shows 26 engines with toggle buttons, summary bar, and two sections (Crypto Scalpers, Exchange Scalper Bots), (6) TopBar shows auto-compounded position size with 'auto' indicator.",
+
+  "api_endpoints_tested": {
+    "GET /api/": "Returns status, engines count (74), broker_mode",
+    "GET /api/global": "Returns kitty, compounded_position_size, position_size, open_positions",
+    "GET /api/engines/summary": "Returns all 74 engine summaries with trade_enabled, super_bot_multiplier",
+    "PUT /api/engines/{id}/toggle-trade": "Toggles trade_enabled for a specific engine"
+  },
+
+  "features_verified_summary": {
+    "74_engines": "✅ WORKING - 24 market + 24 coin + 2 scalper + 24 bot",
+    "auto_compounding": "✅ WORKING - max(5, kitty * 0.05), currently $5 with kitty ~$50",
+    "toggle_trade": "✅ WORKING - PUT endpoint toggles trade_enabled, persists in summary",
+    "super_bot_multiplier": "✅ WORKING - Field present in all bot engine summaries (1/2/3)",
+    "bots_tab_26_engines": "✅ WORKING - Shows 2 crypto scalpers + 24 exchange bots",
+    "toggle_buttons_ui": "✅ WORKING - Each bot row has ON/OFF toggle",
+    "bots_summary_bar": "✅ WORKING - Shows total, trading, enabled, W/L, P&L, position size",
+    "topbar_auto_size": "✅ WORKING - Shows SIZE $5 auto SWING",
+    "two_sections": "✅ WORKING - Crypto Scalpers and Exchange Scalper Bots sections visible"
+  }
+}

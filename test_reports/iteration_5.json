@@ -1,0 +1,128 @@
+{
+  "summary": "Completed comprehensive testing of Live Market Data Feed (Yahoo Finance), Global State, WebSocket, and UI features. All 31 backend tests pass (100%). Frontend UI verified with Playwright - LIVE PRICES indicator, open positions cards, market cards with 4 signal indicators, stop controls all working correctly.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Engine Detail Modal", "issues": ["Console warning: Missing Description or aria-describedby for DialogContent (accessibility)"]}
+    ]
+  },
+  
+  "passed_tests": [
+    "GET /api/market-data/status returns mode=live",
+    "GET /api/market-data/status returns yahoo_symbols >= 23",
+    "GET /api/market-data/status returns crypto_symbols >= 22 (23 found)",
+    "GET /api/market-data/status returns total_with_prices >= 45 (46 found)",
+    "GET /api/market-data/status includes sample_prices with valid prices",
+    "GET /api/engines/summary returns all 50 engines",
+    "Engine summaries have all required fields (engine_id, symbol, regime, rfit, etc.)",
+    "Engine summaries have open_positions array",
+    "GET /api/global returns kitty balance",
+    "GET /api/global returns stop_loss_pct and trailing_stop_pct",
+    "GET /api/global returns open_positions list",
+    "GET /api/global returns pnl_today and pnl_all_time",
+    "PUT /api/global/stop-loss?pct=0.05 sets stop loss to 5%",
+    "PUT /api/global/stop-loss?pct=0.10 sets stop loss to 10%",
+    "PUT /api/global/stop-loss?pct=0.15 sets stop loss to 15%",
+    "PUT /api/global/trailing-stop?pct=0.05 sets trailing stop to 5%",
+    "PUT /api/global/trailing-stop?pct=0.10 sets trailing stop to 10%",
+    "PUT /api/global/trailing-stop?pct=0.15 sets trailing stop to 15%",
+    "Invalid stop loss (20%) rejected with 400",
+    "Invalid trailing stop (25%) rejected with 400",
+    "POST /api/engines/reset-all resets all engines and kitty to $200",
+    "POST /api/engines/start-all starts all 50 engines",
+    "POST /api/engines/stop-all stops all engines",
+    "Single engine start/stop works",
+    "WebSocket connects and receives initial_state",
+    "WebSocket state_update includes broker.data_feed=LIVE",
+    "WebSocket state_update includes broker.symbols_with_prices",
+    "GET /api/broker/status returns connection info",
+    "Reset->Start flow works correctly",
+    "Stop loss changes persist to global state",
+    "Frontend displays 'LIVE PRICES (46)' indicator in header",
+    "Frontend shows open positions as large cards at top",
+    "Frontend market cards show all 4 signal indicators (trend arrow, risk level, capital safety, failsafe badges)",
+    "Frontend stop controls (5%/10%/15%) are clickable and update state",
+    "Frontend global controls (Start All, Stop All, Reset All) work",
+    "Frontend engine detail modal shows Eligibility, Regime, R.Fit, Auto-Trade fields"
+  ],
+  
+  "test_report_links": [
+    "/app/backend/tests/test_live_market_data.py",
+    "/app/test_reports/pytest/pytest_live_market.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "Consider adding aria-describedby to DialogContent for accessibility compliance (minor)"
+  ],
+  
+  "updated_files": [
+    "/app/backend/tests/test_live_market_data.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (31/31 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  
+  "seed_data_creation": "None - system uses real Yahoo Finance prices for 46/48 symbols",
+  
+  "retest_needed": false,
+  
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Live market data feed fully implemented and tested. Yahoo Finance provides real prices for 23 market indices and 23 crypto symbols (46 total). MATIC and RTS fall back to simulated prices as Yahoo doesn't have them. WebSocket broadcasts data_feed=LIVE with symbols_with_prices count. Global kitty starts at $200, flat $5 trades, stop loss/trailing stop adjustable 5%/10%/15%. Open positions displayed as large cards at top of dashboard. Market cards show 4 signal indicators: trend direction, risk level, capital safety, and failsafe triggers.",
+  
+  "mocked_api": {
+    "MATIC": "Falls back to simulated random-walk prices (Yahoo Finance unavailable)",
+    "RTS": "Falls back to simulated random-walk prices (Yahoo Finance unavailable)"
+  },
+  
+  "features_verified": {
+    "live_market_data": {
+      "status": "WORKING",
+      "yahoo_symbols": 23,
+      "crypto_symbols": 23,
+      "total_with_prices": 46,
+      "unavailable_symbols": ["MATIC", "RTS"]
+    },
+    "global_state": {
+      "status": "WORKING",
+      "kitty_default": 200,
+      "position_size": 5,
+      "stop_options": [0.05, 0.10, 0.15]
+    },
+    "websocket": {
+      "status": "WORKING",
+      "broadcasts_data_feed": true,
+      "broadcasts_symbols_count": true
+    },
+    "ui_live_prices_indicator": {
+      "status": "WORKING",
+      "shows_count": true,
+      "location": "header"
+    },
+    "ui_open_positions": {
+      "status": "WORKING",
+      "display": "large cards at top",
+      "shows_unrealised_pnl": true
+    },
+    "ui_signal_indicators": {
+      "status": "WORKING",
+      "indicators": ["trend direction arrow", "risk level (LOW/MED/HIGH)", "capital safety dot", "failsafe badges"]
+    },
+    "ui_stop_controls": {
+      "status": "WORKING",
+      "buttons": ["5%", "10%", "15%"],
+      "updates_backend": true
+    }
+  }
+}

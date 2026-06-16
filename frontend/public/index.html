@@ -1,0 +1,1825 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRADING ENGINE — COMMAND CENTER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080808;
+      --bg1:      #0e0e0e;
+      --bg2:      #131313;
+      --bg3:      #181818;
+      --border:   #1f1f1f;
+      --border2:  #2a2a2a;
+      --text:     #ffffff;
+      --muted:    #888888;
+      --dim:      #444444;
+      --green:    #00ff88;
+      --red:      #ff3b3b;
+      --amber:    #f5a623;
+      --blue:     #4f8ef7;
+      --green-bg: rgba(0,255,136,0.07);
+      --red-bg:   rgba(255,59,59,0.07);
+    }
+
+    html { background: var(--bg); }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', ui-monospace, 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      min-height: 100vh;
+      padding-bottom: 48px;
+    }
+
+    /* ═══════════════════════════════════════
+       HEADER BAR
+    ═══════════════════════════════════════ */
+    #header {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    #header-brand {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    #live-clock {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #status-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    #status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    #status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    #status-dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red);   }
+    #status-dot.amber { background: var(--amber);  box-shadow: 0 0 6px var(--amber); }
+
+    #refresh-indicator {
+      color: var(--dim);
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    #refresh-indicator:hover { color: var(--muted); }
+    #refresh-indicator.refreshing { color: var(--green); }
+
+    .hdr-btn {
+      padding: 3px 10px;
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .hdr-btn:hover { border-color: var(--muted); color: var(--text); }
+    .hdr-btn:active { opacity: 0.7; }
+
+    #pause-btn  { border-color: #5a1a1a; color: var(--red); }
+    #pause-btn:hover { border-color: var(--red); color: var(--red); }
+
+    #btn-trigger-hdr { border-color: #0e3060; color: var(--blue); }
+    #btn-trigger-hdr:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ═══════════════════════════════════════
+       MAIN WRAPPER
+    ═══════════════════════════════════════ */
+    #main {
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 0 0 8px;
+    }
+
+    /* ═══════════════════════════════════════
+       PLATFORM PERFORMANCE STRIP
+    ═══════════════════════════════════════ */
+    #feed-bar {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #0d0d0d;
+    }
+    #feed-dot.live   { background: #22c55e; box-shadow: 0 0 6px #22c55e88; animation: pulse 2s infinite; }
+    #feed-dot.stale  { background: #ef4444; box-shadow: 0 0 6px #ef444488; }
+    #feed-dot.warn   { background: #f59e0b; box-shadow: 0 0 6px #f59e0b88; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    #perf-strip {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .perf-cell {
+      padding: 10px 14px;
+      border-right: 1px solid var(--border);
+    }
+    .perf-cell:last-child { border-right: none; }
+
+    .perf-label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .perf-value {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .perf-value.up   { color: var(--green); }
+    .perf-value.down { color: var(--red); }
+
+    /* ═══════════════════════════════════════
+       SECTION HEADERS
+    ═══════════════════════════════════════ */
+    .section-hdr {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding: 8px 14px 6px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    /* ═══════════════════════════════════════
+       GATE STATUS ROW
+    ═══════════════════════════════════════ */
+    #gate-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gate-panel {
+      padding: 10px 12px;
+      border-right: 1px solid var(--border);
+    }
+    .gate-panel:last-child { border-right: none; }
+
+    .gate-name {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .gate-status-badge {
+      display: inline-block;
+      padding: 1px 7px;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--border2);
+      color: var(--dim);
+      margin-bottom: 6px;
+    }
+    .gate-status-badge.pass { border-color: #004d28; background: rgba(0,255,136,0.08); color: var(--green); }
+    .gate-status-badge.fail { border-color: #5a0000; background: rgba(255,59,59,0.08); color: var(--red); }
+
+    .gate-bar-wrap {
+      height: 3px;
+      background: var(--bg3);
+      margin: 5px 0 4px;
+      position: relative;
+    }
+    .gate-bar-fill {
+      height: 3px;
+      background: var(--dim);
+      transition: width 0.4s ease, background 0.4s;
+      max-width: 100%;
+    }
+    .gate-bar-fill.pass { background: var(--green); }
+    .gate-bar-fill.near { background: var(--amber); }
+    .gate-bar-fill.fail { background: #3a1010; }
+
+    .gate-vals {
+      font-size: 9px;
+      color: var(--dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ═══════════════════════════════════════
+       MARKETS SECTION
+    ═══════════════════════════════════════ */
+    #markets-section {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+    }
+
+    .region-header {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 8px 0 6px;
+      padding-left: 4px;
+      border-left: 2px solid var(--border2);
+    }
+    .region-header:first-child { margin-top: 0; }
+
+    .market-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    .market-card {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      cursor: default;
+      transition: border-color 0.15s;
+    }
+    .market-card:hover { border-color: var(--border2); }
+
+    .mc-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .mc-flag { font-size: 13px; line-height: 1; flex-shrink: 0; }
+    .mc-name {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      flex: 1;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mc-row1 {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+
+    .sig-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--border2);
+      flex-shrink: 0;
+    }
+    .sig-buy  { background: rgba(0,255,136,0.08); border-color: #004d28; color: var(--green); }
+    .sig-sell { background: rgba(255,59,59,0.08); border-color: #5a0000; color: var(--red); }
+    .sig-none { background: var(--bg3); color: var(--dim); }
+
+    .regime-badge {
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      text-align: right;
+    }
+
+    /* WPS bar: split at midpoint */
+    .wps-bar-wrap {
+      height: 3px;
+      background: var(--bg3);
+      position: relative;
+      margin: 4px 0;
+    }
+    .wps-bar-neg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 3px;
+      background: var(--red);
+      transform-origin: right;
+      transition: width 0.4s;
+    }
+    .wps-bar-pos {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      height: 3px;
+      background: var(--green);
+      transition: width 0.4s;
+    }
+    .wps-mid-line {
+      position: absolute;
+      left: 50%;
+      top: -1px;
+      width: 1px;
+      height: 5px;
+      background: var(--border2);
+    }
+
+    .mc-stats {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: 9px;
+      color: var(--dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .mc-stats span { flex: 1; }
+    .mc-momentum {
+      font-size: 11px;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    /* ═══════════════════════════════════════
+       BOTTOM TWO-COLUMN SECTION
+    ═══════════════════════════════════════ */
+    #bottom-cols {
+      display: grid;
+      grid-template-columns: 60fr 40fr;
+      min-width: 0;
+    }
+
+    /* ── LEFT COLUMN: POSITIONS ── */
+    #col-positions {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .positions-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .positions-hdr-count {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      padding: 1px 6px;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    #open-list {
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .trade-card {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+    }
+
+    .tc-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .tc-market { font-size: 10px; font-weight: 900; color: var(--text); text-transform: uppercase; }
+    .tc-side {
+      font-size: 9px;
+      font-weight: 900;
+      padding: 1px 6px;
+      border: 1px solid;
+    }
+    .tc-side.buy  { color: var(--green); border-color: #004d28; background: rgba(0,255,136,0.07); }
+    .tc-side.sell { color: var(--red);   border-color: #5a0000; background: rgba(255,59,59,0.07); }
+    .tc-mode-badge {
+      font-size: 8px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border: 1px solid var(--border2);
+      color: var(--dim);
+      margin-left: auto;
+    }
+    .tc-mode-sim  { color: var(--dim); }
+    .tc-mode-live { color: var(--green); border-color: #004d28; background: rgba(0,255,136,0.07); }
+
+    .tc-prices {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .tc-price-cell { display: flex; flex-direction: column; gap: 2px; }
+    .tc-price-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); text-transform: uppercase; }
+    .tc-price-val { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--muted); }
+    .tc-price-val.pnl-up   { color: var(--green); }
+    .tc-price-val.pnl-down { color: var(--red); }
+
+    .tc-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      color: var(--dim);
+    }
+
+    .divider-closed {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    #closed-list {
+      padding: 4px 10px;
+    }
+
+    .closed-row {
+      display: grid;
+      grid-template-columns: 90px 38px 1fr 70px 50px 32px;
+      gap: 6px;
+      align-items: center;
+      padding: 4px 2px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .closed-row:last-child { border-bottom: none; }
+    .cr-market { font-weight: 900; color: var(--text); text-transform: uppercase; font-size: 9px; }
+    .cr-pnl.up   { color: var(--green); font-weight: 900; }
+    .cr-pnl.down { color: var(--red);   font-weight: 900; }
+    .cr-dur { color: var(--dim); font-size: 9px; }
+    .cr-entry-exit { color: var(--muted); font-size: 9px; }
+    .cr-badge {
+      font-size: 8px;
+      font-weight: 900;
+      padding: 1px 4px;
+      border: 1px solid var(--border2);
+      color: var(--dim);
+      text-align: center;
+    }
+
+    /* ── RIGHT COLUMN: CONTROLS + STATUS ── */
+    #col-controls {
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ctrl-section-label {
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .stepper-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .stepper-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stepper-btn {
+      width: 22px;
+      height: 22px;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      line-height: 1;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .stepper-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    .stepper-val {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text);
+      min-width: 48px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+
+    .action-btn {
+      padding: 7px 10px;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      text-align: center;
+    }
+    .action-btn:hover { border-color: var(--muted); color: var(--text); }
+    .action-btn:active { opacity: 0.7; }
+    .action-btn.blue  { border-color: #0e3060; color: var(--blue); }
+    .action-btn.blue:hover  { border-color: var(--blue); }
+    .action-btn.green { border-color: #004d28; color: var(--green); }
+    .action-btn.green:hover { border-color: var(--green); }
+    .action-btn.red   { border-color: #5a0000; color: var(--red); }
+    .action-btn.red:hover   { border-color: var(--red); }
+
+    .sys-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .sys-table td {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sys-table tr:last-child td { border-bottom: none; }
+    .sys-table .sys-lbl { color: var(--dim); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .sys-table .sys-val { text-align: right; font-weight: 900; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    #cycle-countdown { color: var(--green); }
+
+    /* ═══════════════════════════════════════
+       MODE-A TICKER (BOTTOM)
+    ═══════════════════════════════════════ */
+    #mode-a-ticker {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 50;
+      background: #060606;
+      border-top: 1px solid var(--border);
+      padding: 5px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 11px;
+      overflow: hidden;
+      max-height: 34px;
+    }
+    #mode-a-ticker-label {
+      color: var(--dim);
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: 9px;
+    }
+    #mode-a-ticker-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex: 1;
+      scrollbar-width: thin;
+      scrollbar-color: #333 transparent;
+    }
+    #mode-a-ticker-chips::-webkit-scrollbar { height: 3px; }
+    #mode-a-ticker-chips::-webkit-scrollbar-thumb { background: #333; }
+
+    .ma-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      background: var(--bg1);
+      color: #ccc;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      transition: transform 0.08s ease, border-color 0.15s ease;
+    }
+    .ma-chip:hover { transform: translateY(-1px); border-color: var(--border2); }
+    .ma-chip:active { transform: translateY(0); }
+    .ma-chip .ma-mkt { color: #fff; font-weight: 700; letter-spacing: 0.03em; }
+    .ma-chip .ma-sep { color: var(--dim); }
+    .ma-chip .ma-thr { color: #fff; font-weight: 800; }
+    .ma-chip .ma-st  { font-weight: 800; letter-spacing: 0.05em; }
+    .ma-chip-idle       .ma-st { color: var(--dim); }
+    .ma-chip-collecting .ma-st { color: var(--blue); }
+    .ma-chip-evaluating .ma-st { color: var(--amber); }
+    .ma-chip-adjusting  .ma-st { color: #f97316; }
+    .ma-chip-cooldown   .ma-st { color: #a855f7; }
+    .ma-chip-idle        { border-color: var(--border); }
+    .ma-chip-collecting  { border-color: #1e3a8a; background: #0d1525; }
+    .ma-chip-evaluating  { border-color: #713f12; background: #1a1408; }
+    .ma-chip-adjusting   { border-color: #7c2d12; background: #1a0e08; }
+    .ma-chip-cooldown    { border-color: #581c87; background: #150a1f; }
+
+    /* ═══════════════════════════════════════
+       MODE-A MODAL
+    ═══════════════════════════════════════ */
+    #mode-a-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.78);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+    #mode-a-modal-backdrop.open { display: flex; }
+
+    #mode-a-modal {
+      width: min(560px, 92vw);
+      max-height: 78vh;
+      background: #0a0a0a;
+      border: 1px solid var(--border2);
+      display: flex;
+      flex-direction: column;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+    }
+    #mode-a-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: #060606;
+    }
+    #mode-a-modal-title {
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      font-size: 13px;
+      text-transform: uppercase;
+      margin-right: 10px;
+    }
+    .ma-st-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid var(--border2);
+      background: var(--bg1);
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .ma-st-badge.ma-state-idle       { color: var(--dim);   border-color: var(--border2); }
+    .ma-st-badge.ma-state-collecting { color: var(--blue);  border-color: #1e3a8a; background: #0d1525; }
+    .ma-st-badge.ma-state-evaluating { color: var(--amber); border-color: #713f12; background: #1a1408; }
+    .ma-st-badge.ma-state-adjusting  { color: #f97316;      border-color: #7c2d12; background: #1a0e08; }
+    .ma-st-badge.ma-state-cooldown   { color: #a855f7;      border-color: #581c87; background: #150a1f; }
+    #mode-a-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+    #mode-a-modal-close:hover { color: #fff; }
+    #mode-a-modal-body { padding: 14px 16px; overflow-y: auto; }
+
+    .ma-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .ma-modal-stat {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ma-modal-label {
+      font-size: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+    }
+    .ma-modal-value {
+      font-size: 18px;
+      color: #fff;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .ma-modal-section-label {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      margin: 12px 0 6px;
+    }
+    .ma-modal-metrics, .ma-modal-history {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 10px;
+      font-size: 10px;
+      color: #ccc;
+    }
+    .ma-modal-metrics .ma-mk-row, .ma-modal-history .ma-hist-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ma-modal-metrics .ma-mk-row:last-child, .ma-modal-history .ma-hist-row:last-child { border-bottom: none; }
+    .ma-modal-metrics .ma-mk-k, .ma-modal-history .ma-hist-time { color: var(--dim); }
+    .ma-modal-metrics .ma-mk-v { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .ma-hist-decision-raise { color: #f97316; font-weight: 800; }
+    .ma-hist-decision-lower { color: var(--blue); font-weight: 800; }
+    .ma-hist-decision-hold  { color: var(--dim); }
+    .ma-hist-arrow { color: #fff; font-weight: 800; }
+
+    /* ═══════════════════════════════════════
+       FLASH ANIMATION
+    ═══════════════════════════════════════ */
+    .flash { animation: settle-pulse 0.35s ease-out; }
+    @keyframes settle-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(0,255,136,0); }
+      30%  { box-shadow: 0 0 14px 3px rgba(0,255,136,0.85); }
+      100% { box-shadow: 0 0 0 0 rgba(0,255,136,0); }
+    }
+
+    /* ═══════════════════════════════════════
+       LEGACY HIDDEN UI (JS refs preserved)
+    ═══════════════════════════════════════ */
+    #legacy-ui { display: none !important; }
+
+    /* ═══════════════════════════════════════
+       SKELETON / EMPTY STATES
+    ═══════════════════════════════════════ */
+    .empty-msg {
+      padding: 20px;
+      text-align: center;
+      color: var(--dim);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+  
+
+    /* REPAIR PATCH: compact row dashboard, no grey fog, no chunky cards */
+    #gate-row { display: none !important; }
+    .section-hdr { color:#ffffff !important; padding:6px 12px !important; }
+    #markets-section { padding: 4px 8px 8px !important; }
+    .op-section-title { color:#fff; font-weight:900; letter-spacing:.14em; font-size:10px; margin:4px 0 6px; }
+    .op-table { display:flex; flex-direction:column; gap:3px; }
+    .op-row, .trade-row {
+      display:grid; align-items:center; gap:7px;
+      background:#050505; border:1px solid #2b2b2b; border-radius:3px;
+      color:#ffffff; font-size:12px; font-weight:900; line-height:1.1;
+      padding:5px 7px; min-height:28px; white-space:nowrap; overflow:hidden;
+    }
+    .op-row { grid-template-columns: 145px 42px 74px 46px 74px 74px 64px 88px 88px 64px 58px 58px 64px 90px; }
+    .trade-row { grid-template-columns: 120px 46px 72px 100px 112px 100px 90px; }
+    .op-row span, .trade-row span { color:#ffffff; overflow:hidden; text-overflow:ellipsis; }
+    .op-market { color:#ffffff !important; font-weight:900; }
+    .op-price, .op-age { color:#ffffff !important; }
+    .op-metric { padding:2px 5px; border-radius:3px; text-align:center; border:1px solid currentColor; }
+    .op-pass { color:#00ff88 !important; }
+    .op-fail { color:#ff3b3b !important; }
+    .op-warn { color:#ffbf00 !important; }
+    .op-neutral { color:#ffffff !important; }
+    .op-arrow { font-size:13px; font-weight:900; }
+    .op-up { color:#00ff88 !important; }
+    .op-down { color:#ff3b3b !important; }
+    .op-flat { color:#ffffff !important; }
+    .op-empty { color:#ffffff; border:1px solid #2b2b2b; padding:10px; text-align:center; font-weight:900; background:#050505; }
+    .positions-hdr, .divider-closed, .ctrl-section-label, .perf-label, #live-clock, #feed-label, #feed-detail { color:#ffffff !important; }
+    .stepper-label, .sys-lbl, .sys-val { color:#ffffff !important; }
+    #bottom-cols { grid-template-columns: minmax(0, 1fr) 340px !important; }
+    #open-list, #closed-list { display:flex; flex-direction:column; gap:3px; }
+
+    .optimizer-audit-box { border:1px solid #1f1f1f; background:#050505; padding:6px; border-radius:6px; }
+    .optimizer-audit-summary { display:flex; gap:6px; flex-wrap:wrap; font-size:10px; font-weight:900; color:#ffffff; margin-bottom:5px; }
+    .optimizer-audit-row { display:grid; grid-template-columns: 48px 1fr 58px; gap:5px; align-items:center; color:#ffffff; font-size:10px; font-weight:800; padding:4px 0; border-top:1px solid #111; }
+    .optimizer-audit-row:first-child { border-top:0; }
+    .optimizer-audit-msg { color:#ffffff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .optimizer-audit-impact { text-align:right; font-weight:900; }
+    .optimizer-audit-time { color:#ffffff; font-size:9px; }
+    @media (max-width: 1200px) {
+      .op-row { grid-template-columns: 135px 40px 70px 44px 70px 70px 60px 82px 82px 60px 54px 54px 60px 82px; font-size:11px; gap:5px; }
+      .trade-row { font-size:11px; gap:5px; }
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER BAR (40px sticky)
+═══════════════════════════════════════════ -->
+<div id="header">
+  <div id="header-brand">TRADING ENGINE</div>
+  <div id="live-clock">--:--:--</div>
+  <div id="header-right">
+    <div id="status-badge">
+      <span id="status-dot"></span>
+      <span id="status-text">—</span>
+    </div>
+    <span id="refresh-indicator" onclick="window.dashboard && window.dashboard.refresh()" title="Refresh">&#8635;</span>
+    <button id="btn-all-live" data-testid="all-live-button" class="hdr-btn" style="border-color:#004d28;color:var(--green);" onclick="window.dashboard && window.dashboard.setAllLive(event)">ALL LIVE</button>
+    <button id="btn-all-sim" data-testid="all-sim-button" class="hdr-btn" onclick="window.dashboard && window.dashboard.setAllSim(event)">ALL SIM</button>
+    <button id="broker-btn" class="hdr-btn" style="border-color:#0e3060;color:var(--blue);" onclick="window.dashboard && window.dashboard.connectBroker()">BROKER</button>
+    <button id="pause-btn" class="hdr-btn" onclick="window.dashboard && window.dashboard.togglePause()">PAUSE</button>
+    <button id="btn-trigger-hdr" class="hdr-btn" onclick="window.dashboard && window.dashboard.triggerCycle()">TRIGGER CYCLE</button>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- ═══════════════════════════════════════════
+       PLATFORM PERFORMANCE STRIP
+  ═══════════════════════════════════════════ -->
+  <div id="perf-strip">
+    <div class="perf-cell">
+      <div class="perf-label">All-Time P&amp;L</div>
+      <div class="perf-value" id="bn-alltime-pnl" data-testid="bn-alltime-pnl">—</div>
+    </div>
+    <div class="perf-cell">
+      <div class="perf-label">Today P&amp;L</div>
+      <div class="perf-value" id="today-pnl-big" data-testid="today-pnl-big">—</div>
+    </div>
+    <div class="perf-cell">
+      <div class="perf-label">Win Rate</div>
+      <div class="perf-value" id="wr-big" data-testid="wr-big">—</div>
+    </div>
+    <div class="perf-cell">
+      <div class="perf-label">Profit Factor</div>
+      <div class="perf-value" id="profit-factor-big" data-testid="profit-factor-big">—</div>
+    </div>
+    <div class="perf-cell">
+      <div class="perf-label">Open Trades</div>
+      <div class="perf-value" id="open-count" data-testid="open-count">—</div>
+    </div>
+    <div class="perf-cell">
+      <div class="perf-label">Kitty Balance</div>
+      <div class="perf-value" id="kitty-balance" data-testid="kitty-balance">—</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       DATA FEED STATUS
+  ═══════════════════════════════════════════ -->
+  <div id="feed-bar">
+    <span id="feed-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#555;margin-right:8px;"></span>
+    <span id="feed-label" style="font-size:11px;letter-spacing:0.1em;color:#aaa;">DATA FEED — CHECKING...</span>
+    <span id="feed-detail" style="font-size:10px;color:#666;margin-left:16px;"></span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       GATE STATUS
+  ═══════════════════════════════════════════ -->
+  <div id="gate-row">
+
+    <div class="gate-panel" id="gate-HLTH">
+      <div class="gate-name">HLTH</div>
+      <div class="gate-status-badge" id="gate-HLTH-status">—</div>
+      <div class="gate-bar-wrap">
+        <div class="gate-bar-fill" id="gate-HLTH-bar" style="width:0%"></div>
+      </div>
+      <div class="gate-vals"><span id="gate-HLTH-value">—</span> / <span id="gate-HLTH-threshold">—</span></div>
+    </div>
+
+    <div class="gate-panel" id="gate-TIME4">
+      <div class="gate-name">TIME4</div>
+      <div class="gate-status-badge" id="gate-TIME4-status">—</div>
+      <div class="gate-bar-wrap">
+        <div class="gate-bar-fill" id="gate-TIME4-bar" style="width:0%"></div>
+      </div>
+      <div class="gate-vals"><span id="gate-TIME4-value">—</span> / <span id="gate-TIME4-threshold">—</span></div>
+    </div>
+
+    <div class="gate-panel" id="gate-TRENDING">
+      <div class="gate-name">TRENDING</div>
+      <div class="gate-status-badge" id="gate-TRENDING-status">—</div>
+      <div class="gate-bar-wrap">
+        <div class="gate-bar-fill" id="gate-TRENDING-bar" style="width:0%"></div>
+      </div>
+      <div class="gate-vals"><span id="gate-TRENDING-value">—</span> / <span id="gate-TRENDING-threshold">—</span></div>
+    </div>
+
+    <div class="gate-panel" id="gate-WPS">
+      <div class="gate-name">WPS</div>
+      <div class="gate-status-badge" id="gate-WPS-status">—</div>
+      <div class="gate-bar-wrap">
+        <div class="gate-bar-fill" id="gate-WPS-bar" style="width:0%"></div>
+      </div>
+      <div class="gate-vals"><span id="gate-WPS-value">—</span> / <span id="gate-WPS-threshold">—</span></div>
+    </div>
+
+    <div class="gate-panel" id="gate-CONF">
+      <div class="gate-name">CONF</div>
+      <div class="gate-status-badge" id="gate-CONF-status">—</div>
+      <div class="gate-bar-wrap">
+        <div class="gate-bar-fill" id="gate-CONF-bar" style="width:0%"></div>
+      </div>
+      <div class="gate-vals"><span id="gate-CONF-value">—</span> / <span id="gate-CONF-threshold">—</span></div>
+    </div>
+
+    <div class="gate-panel" id="gate-RISK">
+      <div class="gate-name">RISK</div>
+      <div class="gate-status-badge" id="gate-RISK-status">—</div>
+      <div class="gate-bar-wrap">
+        <div class="gate-bar-fill" id="gate-RISK-bar" style="width:0%"></div>
+      </div>
+      <div class="gate-vals"><span id="gate-RISK-value">—</span> / <span id="gate-RISK-threshold">—</span></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MARKETS
+  ═══════════════════════════════════════════ -->
+  <div class="section-hdr">MARKETS</div>
+  <div id="markets-section">
+
+    <div class="region-header">AMERICAS</div>
+    <div class="market-grid" id="region-americas">
+      <!-- nasdaq100 -->
+      <div class="market-card" id="market-nasdaq100">
+        <div class="mc-header">
+          <span class="mc-flag">🇺🇸</span>
+          <span class="mc-name">NASDAQ 100</span>
+        </div>
+        <div class="mc-row1">
+          <span class="sig-pill sig-none" id="sig-nasdaq100">—</span>
+          <span class="regime-badge" id="regime-nasdaq100">—</span>
+        </div>
+        <div class="wps-bar-wrap" id="wps-wrap-nasdaq100">
+          <div class="wps-mid-line"></div>
+          <div class="wps-bar-neg" id="wps-bar-neg-nasdaq100" style="width:0;left:50%"></div>
+          <div class="wps-bar-pos" id="wps-bar-nasdaq100" style="width:0"></div>
+        </div>
+        <div class="mc-stats">
+          <span id="wps-val-nasdaq100">WPS —</span>
+          <span id="conf-nasdaq100">CONF —</span>
+          <span id="align-nasdaq100">ALN —</span>
+          <span class="mc-momentum" id="mom-nasdaq100">→</span>
+        </div>
+      </div>
+      <!-- sp500 -->
+      <div class="market-card" id="market-sp500">
+        <div class="mc-header"><span class="mc-flag">🇺🇸</span><span class="mc-name">S&amp;P 500</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-sp500">—</span><span class="regime-badge" id="regime-sp500">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-sp500" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-sp500" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-sp500">WPS —</span><span id="conf-sp500">CONF —</span><span id="align-sp500">ALN —</span><span class="mc-momentum" id="mom-sp500">→</span></div>
+      </div>
+      <!-- dowjones -->
+      <div class="market-card" id="market-dowjones">
+        <div class="mc-header"><span class="mc-flag">🇺🇸</span><span class="mc-name">DOW JONES</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-dowjones">—</span><span class="regime-badge" id="regime-dowjones">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-dowjones" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-dowjones" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-dowjones">WPS —</span><span id="conf-dowjones">CONF —</span><span id="align-dowjones">ALN —</span><span class="mc-momentum" id="mom-dowjones">→</span></div>
+      </div>
+      <!-- tsx -->
+      <div class="market-card" id="market-tsx">
+        <div class="mc-header"><span class="mc-flag">🇨🇦</span><span class="mc-name">TSX COMP</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-tsx">—</span><span class="regime-badge" id="regime-tsx">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-tsx" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-tsx" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-tsx">WPS —</span><span id="conf-tsx">CONF —</span><span id="align-tsx">ALN —</span><span class="mc-momentum" id="mom-tsx">→</span></div>
+      </div>
+      <!-- bovespa -->
+      <div class="market-card" id="market-bovespa">
+        <div class="mc-header"><span class="mc-flag">🇧🇷</span><span class="mc-name">BOVESPA</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-bovespa">—</span><span class="regime-badge" id="regime-bovespa">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-bovespa" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-bovespa" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-bovespa">WPS —</span><span id="conf-bovespa">CONF —</span><span id="align-bovespa">ALN —</span><span class="mc-momentum" id="mom-bovespa">→</span></div>
+      </div>
+    </div>
+
+    <div class="region-header">EUROPE</div>
+    <div class="market-grid" id="region-europe">
+      <!-- ftse100 -->
+      <div class="market-card" id="market-ftse100">
+        <div class="mc-header"><span class="mc-flag">🇬🇧</span><span class="mc-name">FTSE 100</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-ftse100">—</span><span class="regime-badge" id="regime-ftse100">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-ftse100" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-ftse100" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-ftse100">WPS —</span><span id="conf-ftse100">CONF —</span><span id="align-ftse100">ALN —</span><span class="mc-momentum" id="mom-ftse100">→</span></div>
+      </div>
+      <!-- dax -->
+      <div class="market-card" id="market-dax">
+        <div class="mc-header"><span class="mc-flag">🇩🇪</span><span class="mc-name">DAX 40</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-dax">—</span><span class="regime-badge" id="regime-dax">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-dax" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-dax" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-dax">WPS —</span><span id="conf-dax">CONF —</span><span id="align-dax">ALN —</span><span class="mc-momentum" id="mom-dax">→</span></div>
+      </div>
+      <!-- cac40 -->
+      <div class="market-card" id="market-cac40">
+        <div class="mc-header"><span class="mc-flag">🇫🇷</span><span class="mc-name">CAC 40</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-cac40">—</span><span class="regime-badge" id="regime-cac40">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-cac40" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-cac40" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-cac40">WPS —</span><span id="conf-cac40">CONF —</span><span id="align-cac40">ALN —</span><span class="mc-momentum" id="mom-cac40">→</span></div>
+      </div>
+      <!-- eurostoxx50 -->
+      <div class="market-card" id="market-eurostoxx50">
+        <div class="mc-header"><span class="mc-flag">🇪🇺</span><span class="mc-name">EURO STOXX 50</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-eurostoxx50">—</span><span class="regime-badge" id="regime-eurostoxx50">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-eurostoxx50" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-eurostoxx50" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-eurostoxx50">WPS —</span><span id="conf-eurostoxx50">CONF —</span><span id="align-eurostoxx50">ALN —</span><span class="mc-momentum" id="mom-eurostoxx50">→</span></div>
+      </div>
+      <!-- smi -->
+      <div class="market-card" id="market-smi">
+        <div class="mc-header"><span class="mc-flag">🇨🇭</span><span class="mc-name">SMI</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-smi">—</span><span class="regime-badge" id="regime-smi">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-smi" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-smi" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-smi">WPS —</span><span id="conf-smi">CONF —</span><span id="align-smi">ALN —</span><span class="mc-momentum" id="mom-smi">→</span></div>
+      </div>
+      <!-- aex -->
+      <div class="market-card" id="market-aex">
+        <div class="mc-header"><span class="mc-flag">🇳🇱</span><span class="mc-name">AEX</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-aex">—</span><span class="regime-badge" id="regime-aex">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-aex" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-aex" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-aex">WPS —</span><span id="conf-aex">CONF —</span><span id="align-aex">ALN —</span><span class="mc-momentum" id="mom-aex">→</span></div>
+      </div>
+      <!-- ibex35 -->
+      <div class="market-card" id="market-ibex35">
+        <div class="mc-header"><span class="mc-flag">🇪🇸</span><span class="mc-name">IBEX 35</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-ibex35">—</span><span class="regime-badge" id="regime-ibex35">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-ibex35" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-ibex35" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-ibex35">WPS —</span><span id="conf-ibex35">CONF —</span><span id="align-ibex35">ALN —</span><span class="mc-momentum" id="mom-ibex35">→</span></div>
+      </div>
+    </div>
+
+    <div class="region-header">ASIA-PACIFIC</div>
+    <div class="market-grid" id="region-apac">
+      <!-- nikkei -->
+      <div class="market-card" id="market-nikkei">
+        <div class="mc-header"><span class="mc-flag">🇯🇵</span><span class="mc-name">NIKKEI 225</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-nikkei">—</span><span class="regime-badge" id="regime-nikkei">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-nikkei" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-nikkei" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-nikkei">WPS —</span><span id="conf-nikkei">CONF —</span><span id="align-nikkei">ALN —</span><span class="mc-momentum" id="mom-nikkei">→</span></div>
+      </div>
+      <!-- asx200 -->
+      <div class="market-card" id="market-asx200">
+        <div class="mc-header"><span class="mc-flag">🇦🇺</span><span class="mc-name">ASX 200</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-asx200">—</span><span class="regime-badge" id="regime-asx200">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-asx200" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-asx200" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-asx200">WPS —</span><span id="conf-asx200">CONF —</span><span id="align-asx200">ALN —</span><span class="mc-momentum" id="mom-asx200">→</span></div>
+      </div>
+      <!-- hangseng -->
+      <div class="market-card" id="market-hangseng">
+        <div class="mc-header"><span class="mc-flag">🇭🇰</span><span class="mc-name">HANG SENG</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-hangseng">—</span><span class="regime-badge" id="regime-hangseng">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-hangseng" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-hangseng" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-hangseng">WPS —</span><span id="conf-hangseng">CONF —</span><span id="align-hangseng">ALN —</span><span class="mc-momentum" id="mom-hangseng">→</span></div>
+      </div>
+      <!-- shanghai -->
+      <div class="market-card" id="market-shanghai">
+        <div class="mc-header"><span class="mc-flag">🇨🇳</span><span class="mc-name">SHANGHAI COMP</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-shanghai">—</span><span class="regime-badge" id="regime-shanghai">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-shanghai" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-shanghai" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-shanghai">WPS —</span><span id="conf-shanghai">CONF —</span><span id="align-shanghai">ALN —</span><span class="mc-momentum" id="mom-shanghai">→</span></div>
+      </div>
+      <!-- sensex -->
+      <div class="market-card" id="market-sensex">
+        <div class="mc-header"><span class="mc-flag">🇮🇳</span><span class="mc-name">SENSEX</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-sensex">—</span><span class="regime-badge" id="regime-sensex">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-sensex" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-sensex" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-sensex">WPS —</span><span id="conf-sensex">CONF —</span><span id="align-sensex">ALN —</span><span class="mc-momentum" id="mom-sensex">→</span></div>
+      </div>
+      <!-- kospi -->
+      <div class="market-card" id="market-kospi">
+        <div class="mc-header"><span class="mc-flag">🇰🇷</span><span class="mc-name">KOSPI</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-kospi">—</span><span class="regime-badge" id="regime-kospi">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-kospi" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-kospi" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-kospi">WPS —</span><span id="conf-kospi">CONF —</span><span id="align-kospi">ALN —</span><span class="mc-momentum" id="mom-kospi">→</span></div>
+      </div>
+    </div>
+
+    <div class="region-header">MIDDLE EAST &amp; AFRICA</div>
+    <div class="market-grid" id="region-mea">
+      <!-- tadawul -->
+      <div class="market-card" id="market-tadawul">
+        <div class="mc-header"><span class="mc-flag">🇸🇦</span><span class="mc-name">TADAWUL</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-tadawul">—</span><span class="regime-badge" id="regime-tadawul">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-tadawul" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-tadawul" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-tadawul">WPS —</span><span id="conf-tadawul">CONF —</span><span id="align-tadawul">ALN —</span><span class="mc-momentum" id="mom-tadawul">→</span></div>
+      </div>
+      <!-- jse -->
+      <div class="market-card" id="market-jse">
+        <div class="mc-header"><span class="mc-flag">🇿🇦</span><span class="mc-name">JSE TOP 40</span></div>
+        <div class="mc-row1"><span class="sig-pill sig-none" id="sig-jse">—</span><span class="regime-badge" id="regime-jse">—</span></div>
+        <div class="wps-bar-wrap"><div class="wps-mid-line"></div><div class="wps-bar-neg" id="wps-bar-neg-jse" style="width:0;left:50%"></div><div class="wps-bar-pos" id="wps-bar-jse" style="width:0"></div></div>
+        <div class="mc-stats"><span id="wps-val-jse">WPS —</span><span id="conf-jse">CONF —</span><span id="align-jse">ALN —</span><span class="mc-momentum" id="mom-jse">→</span></div>
+      </div>
+    </div>
+
+  </div><!-- /#markets-section -->
+
+  <!-- market-perf-grid: preserved for JS, hidden inside markets section -->
+  <div id="market-perf-grid" data-testid="market-perf-grid" style="display:none;"></div>
+
+  <!-- ═══════════════════════════════════════════
+       BOTTOM TWO COLUMNS
+  ═══════════════════════════════════════════ -->
+  <div id="bottom-cols">
+
+    <!-- LEFT: POSITIONS -->
+    <div id="col-positions">
+
+      <div class="positions-hdr">
+        OPEN POSITIONS
+        <span class="positions-hdr-count" id="open-count-badge" data-testid="open-count-badge">0</span>
+      </div>
+
+      <div id="open-list" data-testid="open-list">
+        <div class="empty-msg">NO OPEN POSITIONS</div>
+      </div>
+
+      <div class="divider-closed">
+        CLOSED TODAY
+        <span class="positions-hdr-count" id="closed-count" data-testid="closed-count">0</span>
+      </div>
+
+      <div id="closed-list" data-testid="closed-list">
+        <div class="empty-msg">NO CLOSED TRADES TODAY</div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: CONTROLS + STATUS -->
+    <div id="col-controls">
+
+      <!-- Risk Controls -->
+      <div>
+        <div class="ctrl-section-label">RISK CONTROLS</div>
+        <div class="stepper-row">
+          <span class="stepper-label">STOP LOSS</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" data-testid="sl-minus" onclick="window.dashboard && window.dashboard.adjustSL(-0.2)">−</button>
+            <span class="stepper-val" id="sl-display" data-testid="sl-display">20%</span>
+            <button class="stepper-btn" data-testid="sl-plus" onclick="window.dashboard && window.dashboard.adjustSL(0.2)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row">
+          <span class="stepper-label">TRAIL GIVE-BACK</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" data-testid="trail-minus" onclick="window.dashboard && window.dashboard.adjustTrail(-0.2)">−</button>
+            <span class="stepper-val" id="ts-display" data-testid="ts-display">30%</span>
+            <button class="stepper-btn" data-testid="trail-plus" onclick="window.dashboard && window.dashboard.adjustTrail(0.2)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual Gate Controls -->
+      <div>
+        <div class="ctrl-section-label">GATE GOVERNOR</div>
+        <div class="stepper-row">
+          <span class="stepper-label">PER-MARKET WPS</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('WPS', -0.05)">−</button>
+            <span class="stepper-val" id="gate-wps-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('WPS', 0.05)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row">
+          <span class="stepper-label">PER-MARKET CONF</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('CONF', -0.05)">−</button>
+            <span class="stepper-val" id="gate-conf-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('CONF', 0.05)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row">
+          <span class="stepper-label">ALIGNMENT</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('TIME4', -0.05)">−</button>
+            <span class="stepper-val" id="gate-time4-display">—</span>
+            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGate('TIME4', 0.05)">+</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <input id="mkt-wps-market" placeholder="market e.g. dax40" style="flex:1;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
+          <input id="mkt-wps-threshold" placeholder="WPS" style="width:54px;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
+          <button class="action-btn" style="padding:5px 7px;" onclick="window.dashboard && window.dashboard.setMarketWps()">SET WPS</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <input id="mkt-conf-market" placeholder="market e.g. dax40" style="flex:1;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
+          <input id="mkt-conf-threshold" placeholder="CONF" style="width:54px;background:#0e0e0e;border:1px solid var(--border2);color:var(--text);font-family:inherit;font-size:10px;padding:5px;" />
+          <button class="action-btn" style="padding:5px 7px;" onclick="window.dashboard && window.dashboard.setMarketConf()">SET CONF</button>
+        </div>
+        <div id="gate-status" style="font-size:10px;color:var(--dim);letter-spacing:0.08em;min-height:14px;margin-top:4px;"></div>
+      </div>
+
+
+      <!-- Auto Optimizer Audit -->
+      <div>
+        <div class="ctrl-section-label">AUTO-OPTIMIZER AUDIT</div>
+        <div id="optimizer-audit-box" class="optimizer-audit-box">
+          <div class="op-empty">NO OPTIMIZER CHANGES YET</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div>
+        <div class="ctrl-section-label">ACTIONS</div>
+        <div class="action-grid">
+          <button class="action-btn blue" id="btn-trigger" onclick="window.dashboard && window.dashboard.triggerCycle()">TRIGGER CYCLE</button>
+          <button class="action-btn" onclick="window.dashboard && window.dashboard.refresh()">REFRESH</button>
+          <button class="action-btn green" onclick="window.dashboard && window.dashboard.setAllLive(event)">ALL LIVE</button>
+          <button class="action-btn" onclick="window.dashboard && window.dashboard.setAllSim(event)">ALL SIM</button>
+        </div>
+      </div>
+
+      <!-- System Status -->
+      <div>
+        <div class="ctrl-section-label">SYSTEM STATUS</div>
+        <table class="sys-table">
+          <tr>
+            <td class="sys-lbl">BROKER</td>
+            <td class="sys-val" id="sys-broker" data-testid="sys-broker" style="color:var(--red)">DISCONNECTED</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">DATA FEED</td>
+            <td class="sys-val" id="sys-datafeed">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">LAST CYCLE</td>
+            <td class="sys-val" id="sys-last-cycle">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">NEXT CYCLE IN</td>
+            <td class="sys-val" id="cycle-countdown" data-testid="cycle-countdown">— s</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Today Stats -->
+      <div>
+        <div class="ctrl-section-label">TODAY</div>
+        <table class="sys-table">
+          <tr>
+            <td class="sys-lbl">WINS</td>
+            <td class="sys-val" id="today-wins" data-testid="today-wins" style="color:var(--green)">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">LOSSES</td>
+            <td class="sys-val" id="today-losses" data-testid="today-losses" style="color:var(--red)">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">FLAT</td>
+            <td class="sys-val" id="today-flat" data-testid="today-flat">—</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Kitty Detail -->
+      <div>
+        <div class="ctrl-section-label">KITTY 1</div>
+        <table class="sys-table">
+          <tr>
+            <td class="sys-lbl">TRADES</td>
+            <td class="sys-val" id="kit-trades">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">WINS</td>
+            <td class="sys-val" id="kit-wins" style="color:var(--green)">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">WIN RATE</td>
+            <td class="sys-val" id="kit-wr" style="color:var(--green)">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">TOTAL P&amp;L</td>
+            <td class="sys-val" id="kit-pnl">—</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- All-Time Stats -->
+      <div>
+        <div class="ctrl-section-label">ALL-TIME</div>
+        <table class="sys-table">
+          <tr>
+            <td class="sys-lbl">P&amp;L</td>
+            <td class="sys-val" id="alltime-pnl-big" data-testid="alltime-pnl-big">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">WINS</td>
+            <td class="sys-val" id="alltime-wins" style="color:var(--green)">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">LOSSES</td>
+            <td class="sys-val" id="alltime-losses" style="color:var(--red)">—</td>
+          </tr>
+          <tr>
+            <td class="sys-lbl">WIN RATE</td>
+            <td class="sys-val" id="alltime-wr" data-testid="alltime-wr" style="color:var(--green)">—</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- API Credentials -->
+      <div>
+        <div class="ctrl-section-label">CREDENTIALS</div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:8px 0;">
+          <input id="cred-username" type="text" placeholder="IG USERNAME"
+            style="background:#0e0e0e;border:1px solid var(--border2);color:var(--text);
+                   font-family:inherit;font-size:11px;padding:6px 8px;width:100%;letter-spacing:0.05em;"
+            autocomplete="off" />
+          <input id="cred-password" type="password" placeholder="IG PASSWORD"
+            style="background:#0e0e0e;border:1px solid var(--border2);color:var(--text);
+                   font-family:inherit;font-size:11px;padding:6px 8px;width:100%;letter-spacing:0.05em;"
+            autocomplete="new-password" />
+          <input id="cred-apikey" type="password" placeholder="EODHD API KEY"
+            style="background:#0e0e0e;border:1px solid var(--border2);color:var(--text);
+                   font-family:inherit;font-size:11px;padding:6px 8px;width:100%;letter-spacing:0.05em;"
+            autocomplete="off" />
+          <button onclick="saveCreds()"
+            style="background:transparent;border:1px solid var(--border2);color:var(--muted);
+                   font-family:inherit;font-size:10px;font-weight:900;letter-spacing:0.12em;
+                   padding:5px 0;cursor:pointer;text-transform:uppercase;margin-top:2px;"
+            onmouseover="this.style.borderColor='#888';this.style.color='#fff'"
+            onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+            SAVE CREDENTIALS
+          </button>
+          <div id="cred-status" style="font-size:10px;color:var(--dim);letter-spacing:0.08em;min-height:14px;"></div>
+        </div>
+      </div>
+
+      <!-- Win Rate sub/caution (hidden unless JS triggers) -->
+      <div id="wr-sub" data-testid="wr-sub" style="font-size:10px;color:var(--dim);display:none;"></div>
+      <div id="wr-caution" data-testid="wr-caution" style="font-size:9px;color:var(--amber);font-weight:900;display:none;letter-spacing:0.1em;">CAUTION</div>
+
+      <!-- Stake / stake-current needed by JS -->
+      <div style="display:none;">
+        <span id="stake-current" data-testid="stake-current">$2</span>
+        <span id="stake-chips" data-testid="stake-chips"></span>
+        <span id="today-wr-line" data-testid="today-wr-line"></span>
+      </div>
+
+    </div><!-- /#col-controls -->
+
+  </div><!-- /#bottom-cols -->
+
+  <!-- ═══════════════════════════════════════════
+       LEGACY HIDDEN UI (JS references preserved)
+  ═══════════════════════════════════════════ -->
+  <div id="legacy-ui">
+    <!-- All the old IDs the JS may reference -->
+    <div id="alltime-banner" data-testid="alltime-banner"></div>
+    <div id="stats-bar">
+      <div id="tile-today-pnl"><div id="stat-today-pnl"></div></div>
+      <div id="tile-net-pnl"><div id="stat-net"></div></div>
+      <div id="stat-winrate"></div>
+      <div id="stat-avg-trade"></div>
+      <div id="stat-avg-trade-sub"></div>
+      <div id="stat-wins"></div>
+      <div id="stat-losses"></div>
+      <div id="stat-today-wins"></div>
+      <div id="stat-today-losses"></div>
+    </div>
+    <div id="bn-wins" data-testid="bn-wins"></div>
+    <div id="bn-losses" data-testid="bn-losses"></div>
+    <div id="bn-wr" data-testid="bn-wr"></div>
+    <div id="cmd-today-pnl"></div>
+    <div id="cmd-alltime-pnl"></div>
+    <div id="cmd-trade-count"></div>
+    <div id="cmd-engines-running"></div>
+    <div id="cmd-engines-quiet"></div>
+    <div id="kitty-panel"></div>
+    <div id="kitty-detail"></div>
+    <div id="kitty-history"></div>
+    <div id="sys-kitty"></div>
+    <div id="ta-display"></div>
+    <div id="live-mode-status"></div>
+    <div id="active-trades-count"></div>
+    <div id="all-active-trades"></div>
+    <div id="closed-trades-panel" data-testid="closed-trades-panel"></div>
+    <div id="other-stats-panel" data-testid="other-stats-panel"></div>
+    <div id="market-cards"></div>
+    <div id="all-market-cards"></div>
+    <div id="expectancy-leaderboard" data-testid="expectancy-leaderboard"></div>
+    <div id="gate-flow-panel" data-testid="gate-flow-panel"></div>
+    <div id="engine-panels-container">
+      <div id="epanel-equity">
+        <div id="active-trades-equity"></div>
+        <div id="etab-status-equity"></div>
+        <div id="etab-stats-equity"></div>
+      </div>
+      <div id="epanel-crypto_scalp"></div>
+      <div id="epanel-crypto_long"></div>
+    </div>
+    <div id="summary-equity-dot"></div>
+    <div id="summary-equity-status"></div>
+    <div id="summary-equity-stats"></div>
+    <div id="cat-toggle-equity" data-testid="equity-lifecycle-toggle"></div>
+    <div id="swarm-detail"></div>
+    <div id="swarm-panel"></div>
+    <div id="ranges-panel"></div>
+    <div id="crypto-cards"></div>
+    <div id="engine-status-detail"></div>
+    <div id="events-panel"></div>
+    <div id="command-center"></div>
+    <div id="cmd-toggle"></div>
+    <div id="faceplate-grid">
+      <div id="col-markets"></div>
+      <div id="col-trades"></div>
+      <div id="col-stats"></div>
+    </div>
+    <div id="error-bar"></div>
+    <div id="active-trades-container"></div>
+    <div id="dash3col"></div>
+  </div>
+
+</div><!-- /#main -->
+
+<!-- ═══════════════════════════════════════════
+     MODE-A LIVE TICKER
+═══════════════════════════════════════════ -->
+<div id="mode-a-ticker" data-testid="mode-a-ticker">
+  <span id="mode-a-ticker-label">MODE-A</span>
+  <div id="mode-a-ticker-chips">
+    <span class="ma-chip ma-chip-idle"><span class="ma-st">WAITING…</span></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODE-A DETAIL MODAL
+═══════════════════════════════════════════ -->
+<div id="mode-a-modal-backdrop" data-testid="mode-a-modal-backdrop" onclick="if(event.target===this)window.dashboard&&window.dashboard.closeModeAModal()">
+  <div id="mode-a-modal" data-testid="mode-a-modal" role="dialog" aria-modal="true">
+    <div id="mode-a-modal-header">
+      <div>
+        <span id="mode-a-modal-title">—</span>
+        <span id="mode-a-modal-state-badge" class="ma-st-badge">—</span>
+      </div>
+      <button id="mode-a-modal-close" data-testid="mode-a-modal-close" onclick="window.dashboard&&window.dashboard.closeModeAModal()">×</button>
+    </div>
+    <div id="mode-a-modal-body">
+      <div class="ma-modal-grid">
+        <div class="ma-modal-stat"><span class="ma-modal-label">THRESHOLD</span><span id="ma-md-threshold" class="ma-modal-value">—</span></div>
+        <div class="ma-modal-stat"><span class="ma-modal-label">TRADES SINCE EVAL</span><span id="ma-md-since" class="ma-modal-value">—</span></div>
+        <div class="ma-modal-stat"><span class="ma-modal-label">COOLDOWN REMAINING</span><span id="ma-md-cd" class="ma-modal-value">—</span></div>
+        <div class="ma-modal-stat"><span class="ma-modal-label">LAST DECISION</span><span id="ma-md-decision" class="ma-modal-value">—</span></div>
+      </div>
+      <div class="ma-modal-section-label">LAST METRICS</div>
+      <div id="ma-md-metrics" class="ma-modal-metrics">No metrics yet — Mode-A has not evaluated this market.</div>
+      <div class="ma-modal-section-label">THRESHOLD CHANGE HISTORY</div>
+      <div id="ma-md-history" class="ma-modal-history">No threshold changes yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     INLINE JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Live Clock ──────────────────────────────
+  function tickClock() {
+    var el = document.getElementById('live-clock');
+    if (!el) return;
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2,'0');
+    var m = String(now.getMinutes()).padStart(2,'0');
+    var s = String(now.getSeconds()).padStart(2,'0');
+    el.textContent = h + ':' + m + ':' + s;
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // ── Data Feed Monitor ───────────────────────
+  async function pollDataQuality() {
+    try {
+      var r = await fetch('/api/data-quality');
+      var d = await r.json();
+      var dot   = document.getElementById('feed-dot');
+      var label = document.getElementById('feed-label');
+      var detail = document.getElementById('feed-detail');
+      if (!dot) return;
+
+      // Markets whose native exchange isn't carried by the EODHD data plan.
+      // These are expected to have no feed — report them as "not on data plan",
+      // not as broken/stale, so the banner reflects only real feed problems.
+      var UNCOVERED = { nzx50:1, mib:1, nikkei225:1, sensex:1, set:1, tadawul:1, jse:1 };
+
+      var markets = d.markets || {};
+      var keys = Object.keys(markets);
+      if (keys.length === 0) {
+        dot.className = 'warn';
+        label.textContent = 'DATA FEED — NO DATA YET';
+        label.style.color = '#f59e0b';
+        return;
+      }
+
+      var coveredKeys = keys.filter(function(k){ return !UNCOVERED[k]; });
+      var coveredTotal = coveredKeys.length;
+      var connected = coveredKeys.filter(function(k){ return markets[k].feed_ok; }).length;
+      var notConnected = keys.length - coveredTotal;
+      var stale = (d.stale_alerts || []).filter(function(s){ return !UNCOVERED[s.market]; });
+      var ncSuffix = notConnected ? ' · ' + notConnected + ' not on data plan' : '';
+
+      if (stale.length === 0) {
+        dot.className = 'live';
+        label.textContent = 'DATA FEED — LIVE';
+        label.style.color = '#22c55e';
+        detail.textContent = connected + '/' + coveredTotal + ' connected' + ncSuffix;
+        detail.style.color = '#666';
+      } else if (connected >= coveredTotal * 0.7) {
+        dot.className = 'warn';
+        label.textContent = 'DATA FEED — PARTIAL';
+        label.style.color = '#f59e0b';
+        var staleNames = stale.slice(0,3).map(function(s){ return s.market; }).join(', ');
+        detail.textContent = staleNames + (stale.length > 3 ? ' +' + (stale.length-3) + ' more' : '') + ' stale' + ncSuffix;
+        detail.style.color = '#f59e0b';
+      } else {
+        dot.className = 'stale';
+        label.textContent = 'DATA FEED — STALE';
+        label.style.color = '#ef4444';
+        detail.textContent = connected + '/' + coveredTotal + ' connected' + ncSuffix;
+        detail.style.color = '#ef4444';
+      }
+    } catch(e) {
+      var dot = document.getElementById('feed-dot');
+      var label = document.getElementById('feed-label');
+      if (dot) dot.className = 'stale';
+      if (label) { label.textContent = 'DATA FEED — OFFLINE'; label.style.color = '#ef4444'; }
+    }
+  }
+  pollDataQuality();
+  setInterval(pollDataQuality, 30000);  // check every 30s
+
+  // ── Gate Display ────────────────────────────
+  // gateResults: [{gate, status, value, threshold, pct}]
+  // pct: 0-100, how close to passing (100 = at/past threshold)
+  function updateGateDisplay(gateResults) {
+    if (!Array.isArray(gateResults)) return;
+    gateResults.forEach(function(g) {
+      var name = g.gate;
+      var badge   = document.getElementById('gate-' + name + '-status');
+      var bar     = document.getElementById('gate-' + name + '-bar');
+      var valEl   = document.getElementById('gate-' + name + '-value');
+      var thrEl   = document.getElementById('gate-' + name + '-threshold');
+
+      if (badge) {
+        var pass = (g.status === 'PASS' || g.status === true || g.status === 'pass');
+        badge.textContent = pass ? 'PASS' : 'FAIL';
+        badge.className = 'gate-status-badge ' + (pass ? 'pass' : 'fail');
+      }
+
+      if (bar) {
+        var pct = Math.min(100, Math.max(0, Number(g.pct) || 0));
+        bar.style.width = pct + '%';
+        var cls = 'gate-bar-fill ';
+        if (pct >= 100)      cls += 'pass';
+        else if (pct >= 70)  cls += 'near';
+        else                 cls += 'fail';
+        bar.className = cls;
+      }
+
+      if (valEl)  valEl.textContent  = g.value     != null ? g.value     : '—';
+      if (thrEl)  thrEl.textContent  = g.threshold != null ? g.threshold : '—';
+    });
+  }
+
+  // ── Market Card Updater ─────────────────────
+  // data: {signal, wps, regime, confidence, alignment, momentum}
+  function updateMarket(key, data) {
+    var sig     = document.getElementById('sig-' + key);
+    var regime  = document.getElementById('regime-' + key);
+    var wpsPos  = document.getElementById('wps-bar-' + key);       // positive (right half)
+    var wpsNeg  = document.getElementById('wps-bar-neg-' + key);   // negative (left half)
+    var wpsVal  = document.getElementById('wps-val-' + key);
+    var confEl  = document.getElementById('conf-' + key);
+    var alignEl = document.getElementById('align-' + key);
+    var momEl   = document.getElementById('mom-' + key);
+
+    if (!data) return;
+
+    // Signal pill
+    if (sig) {
+      var s = (data.signal || '').toUpperCase();
+      if (s === 'BUY') {
+        sig.textContent = 'BUY';
+        sig.className   = 'sig-pill sig-buy';
+      } else if (s === 'SELL') {
+        sig.textContent = 'SELL';
+        sig.className   = 'sig-pill sig-sell';
+      } else {
+        sig.textContent = '—';
+        sig.className   = 'sig-pill sig-none';
+      }
+    }
+
+    // Regime
+    if (regime) regime.textContent = data.regime || '—';
+
+    // WPS bar — split at midpoint
+    // wps range -100 to +100; each side fills 0-50% of bar width
+    var wps = Number(data.wps) || 0;
+    if (wpsPos && wpsNeg) {
+      if (wps >= 0) {
+        var posPct = Math.min(wps / 100 * 50, 50); // max 50% (right half)
+        wpsPos.style.width = posPct + '%';
+        wpsNeg.style.width = '0%';
+      } else {
+        var negPct = Math.min(Math.abs(wps) / 100 * 50, 50);
+        // negative bar: starts at 50% mark going left
+        wpsNeg.style.width = negPct + '%';
+        wpsNeg.style.left  = (50 - negPct) + '%';
+        wpsPos.style.width = '0%';
+      }
+    }
+
+    if (wpsVal)  wpsVal.textContent  = 'WPS ' + (data.wps != null ? Number(data.wps).toFixed(1) : '—');
+    if (confEl)  confEl.textContent  = 'CONF '  + (data.confidence != null ? Math.round(data.confidence) + '%' : '—');
+    if (alignEl) alignEl.textContent = 'ALN '   + (data.alignment  != null ? data.alignment : '—');
+
+    // Momentum arrow
+    if (momEl) {
+      var m = (data.momentum || '').toLowerCase();
+      if (m === 'up' || m === 'accelerating' || m === 'rising')      momEl.textContent = '↑';
+      else if (m === 'down' || m === 'fading' || m === 'falling')    momEl.textContent = '↓';
+      else                                                            momEl.textContent = '→';
+    }
+  }
+
+  // ── Perf Strip Colouring ────────────────────
+  // Called by external JS when values are set
+  function colourPerfValue(id, value) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var n = parseFloat(String(value).replace(/[^0-9.\-]/g, ''));
+    if (!isNaN(n)) {
+      if (n > 0)      el.classList.add('up'),   el.classList.remove('down');
+      else if (n < 0) el.classList.add('down'), el.classList.remove('up');
+      else            el.classList.remove('up','down');
+    }
+  }
+
+  // MutationObserver to auto-colour perf values when text changes
+  ['bn-alltime-pnl','today-pnl-big'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    new MutationObserver(function() {
+      colourPerfValue(id, el.textContent);
+    }).observe(el, { childList: true, characterData: true, subtree: true });
+  });
+
+  // ── Expose public API ───────────────────────
+  window.dashboard = window.dashboard || {};
+  Object.assign(window.dashboard, {
+    updateGateDisplay: updateGateDisplay,
+    updateMarket:      updateMarket,
+    colourPerfValue:   colourPerfValue,
+  });
+
+})();
+
+async function saveCreds() {
+  var username = document.getElementById('cred-username').value.trim();
+  var password = document.getElementById('cred-password').value;
+  var apikey   = document.getElementById('cred-apikey').value.trim();
+  var status   = document.getElementById('cred-status');
+
+  if (!username && !password && !apikey) {
+    status.textContent = 'NOTHING TO SAVE';
+    status.style.color = 'var(--amber)';
+    return;
+  }
+
+  status.textContent = 'SAVING...';
+  status.style.color = 'var(--muted)';
+
+  try {
+    var r = await fetch('/api/settings/credentials', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ig_user: username, ig_password: password, eodhd_api_key: apikey })
+    });
+    var d = await r.json();
+    if (r.ok) {
+      status.textContent = '✓ SAVED';
+      status.style.color = 'var(--green)';
+      // Clear password fields for security
+      document.getElementById('cred-password').value = '';
+      document.getElementById('cred-apikey').value = '';
+      setTimeout(function(){ status.textContent = ''; }, 3000);
+    } else {
+      status.textContent = 'ERROR: ' + (d.detail || 'unknown');
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    status.textContent = 'FAILED — SERVER OFFLINE';
+    status.style.color = 'var(--red)';
+  }
+}
+</script>
+
+<script src="/public/dashboard-v61.js"></script>
+</body>
+</html>

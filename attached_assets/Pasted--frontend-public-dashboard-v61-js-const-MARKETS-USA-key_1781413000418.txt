@@ -1,0 +1,87 @@
+// frontend/public/dashboard-v61.js
+
+const MARKETS = [
+  // USA
+  { key: "nasdaq100", label: "NASDAQ 100" },
+  { key: "sp500", label: "S&P 500" },
+  { key: "dowjones", label: "DOW JONES" },
+
+  // Canada
+  { key: "tsxcomp", label: "TSX COMP" },
+
+  // Brazil
+  { key: "bovespa", label: "BOVESPA" },
+
+  // Europe
+  { key: "ftse100", label: "FTSE 100" },
+  { key: "dax40", label: "DAX 40" },
+  { key: "cac40", label: "CAC 40" },
+  { key: "eurostoxx50", label: "EURO STOXX 50" },
+  { key: "smi", label: "SMI" },
+  { key: "aex", label: "AEX" },
+  { key: "ibex35", label: "IBEX 35" },
+
+  // Asia-Pacific
+  { key: "nikkei225", label: "NIKKEI 225" },
+  { key: "asx200", label: "ASX 200" },
+  { key: "hangseng", label: "HANG SENG" },
+  { key: "shanghaicomp", label: "SHANGHAI COMP" },
+  { key: "sensex", label: "SENSEX" },
+  { key: "kospi", label: "KOSPI" },
+
+  // Middle East & Africa
+  { key: "tadawul", label: "TADAWUL" },
+  { key: "jsetop40", label: "JSE TOP 40" },
+];
+
+async function fetchMarket(key) {
+  try {
+    const res = await fetch(`/api/live/${key}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+
+    const priceEl = document.getElementById(`${key}-wps`);
+    const confEl = document.getElementById(`${key}-conf`);
+    const alnEl = document.getElementById(`${key}-aln`);
+
+    if (!priceEl || !confEl || !alnEl) {
+      console.warn(`Missing DOM elements for market: ${key}`);
+      return;
+    }
+
+    const price = data.price != null ? data.price.toFixed(2) : "—";
+    const change = data.change != null ? data.change.toFixed(2) : "—";
+    const changeP =
+      data.change_p != null ? `${data.change_p.toFixed(2)}%` : "—";
+    const aln = data.aln || "→";
+
+    priceEl.textContent = price;
+    confEl.textContent = `${change} (${changeP})`;
+    alnEl.textContent = aln;
+
+    // Optional: add CSS classes based on direction
+    alnEl.classList.remove("up", "down", "flat");
+    if (aln === "↑") {
+      alnEl.classList.add("up");
+    } else if (aln === "↓") {
+      alnEl.classList.add("down");
+    } else {
+      alnEl.classList.add("flat");
+    }
+  } catch (err) {
+    console.error(`Failed to load market ${key}:`, err);
+  }
+}
+
+function refreshAllMarkets() {
+  MARKETS.forEach((m) => fetchMarket(m.key));
+}
+
+// Initial load
+document.addEventListener("DOMContentLoaded", () => {
+  refreshAllMarkets();
+  // Refresh every 60 seconds (adjust if needed)
+  setInterval(refreshAllMarkets, 60 * 1000);
+});
