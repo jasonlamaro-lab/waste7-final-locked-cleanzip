@@ -898,8 +898,12 @@
     .mkt-tile-metrics { display:flex; gap:10px; }
     .mkt-tile-metrics .op-metric { flex:1; padding:10px 8px; font-size:16px; }
     .mkt-tile-metrics .op-arrow { font-size:17px; }
-    .mkt-tile-perf { display:flex; justify-content:space-between; gap:14px; }
+    .mkt-tile-perf { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px; }
+    .mkt-tile-perf > .mkt-stat:first-child { justify-self:start; }
+    .mkt-tile-perf > .mkt-stat:last-child { justify-self:end; }
     .mkt-stat { font-weight:900; white-space:nowrap; font-size:19px; }
+    .mkt-price-stat { color:#ffffff !important; justify-self:center; }
+    .mkt-price-stat .op-arrow { font-size:19px; }
     .op-market { color:#ffffff !important; font-weight:900; }
     .op-price, .op-age { color:#ffffff !important; }
     .op-metric { padding:2px 5px; border-radius:3px; text-align:center; border:1px solid currentColor; }

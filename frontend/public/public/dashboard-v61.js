@@ -2794,6 +2794,17 @@ refreshModeATicker();
 // ─────────────────────────────────────────────────────────────────────────────
 let _lastGateTrend = window._lastGateTrend || {};
 window._lastGateTrend = _lastGateTrend;
+let _lastPriceTrend = window._lastPriceTrend || {};
+window._lastPriceTrend = _lastPriceTrend;
+function _priceArrow(key, price) {
+  const v = parseFloat(price);
+  if (!Number.isFinite(v)) return '';
+  const prev = _lastPriceTrend[key];
+  _lastPriceTrend[key] = v;
+  if (prev == null || Math.abs(v - prev) < 1e-9) return '<span class="op-arrow op-flat">→</span>';
+  const up = v > prev;
+  return `<span class="op-arrow ${up ? 'op-up' : 'op-down'}">${up ? '↑' : '↓'}</span>`;
+}
 
 function _num(v, fallback = 0) {
   const n = parseFloat(v);
@@ -2951,11 +2962,11 @@ function renderMarkets(markets, lifecycle) {
     const wpsArrow = _metricArrow(key, 'wps', wpsVal, wpsPass, signal);
     const confArrow = _metricArrow(key, 'conf', confVal, confPass, signal);
     const alnArrow = alnPass ? '<span class="op-arrow op-up">✓</span>' : '<span class="op-arrow op-down">↓</span>';
+    const priceRaw = (m && (m.price ?? m.current_price ?? m.last_price)) ?? (trade && trade.current_price) ?? null;
     return `<div class="mkt-tile" data-market="${key}" onclick="window.dashboard && window.dashboard.expandMarket && window.dashboard.expandMarket('${key}')">
       <div class="mkt-tile-head">
         <span class="mkt-name">${def.flag} ${escHtml(def.label)}</span>
         <span class="mkt-signal ${sigCls}">${signal}</span>
-        <span class="mkt-price">${_marketPrice(key, m, trade)}</span>
       </div>
       <div class="mkt-tile-metrics">
         ${_metricCell('WPS', _fmt1(Math.abs(wpsVal)), _fmt1(th.wps), wpsPass, wpsArrow)}
@@ -2964,6 +2975,7 @@ function renderMarkets(markets, lifecycle) {
       </div>
       <div class="mkt-tile-perf">
         <span class="mkt-stat ${perf.wr >= 60 ? 'op-pass' : 'op-fail'}">WR ${perf.wr}%</span>
+        <span class="mkt-stat mkt-price-stat">${_marketPrice(key, m, trade)} ${_priceArrow(key, priceRaw)}</span>
         <span class="mkt-stat ${perf.pf >= 2 ? 'op-pass' : perf.pf >= 1 ? 'op-warn' : 'op-fail'}">PF ${perf.pf >= 999 ? '∞' : perf.pf.toFixed(2)}</span>
       </div>
     </div>`;
