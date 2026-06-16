@@ -2951,7 +2951,8 @@ function _marketThresholds(key, m, lcData) {
   const confTight = gates.CONF && gates.CONF.tightness != null ? _num(gates.CONF.tightness, 0)
                   : (_gateTightness && _gateTightness.CONF != null ? _num(_gateTightness.CONF, 0) : 0);
   const conf = Math.round((0.20 + confTight * 0.35) * 100);
-  const timeTight = _gateTightness && _gateTightness.TIME4 != null ? _num(_gateTightness.TIME4, 0) : 0;
+  const timeTight = gates.TIME4 && gates.TIME4.tightness != null ? _num(gates.TIME4.tightness, 0)
+                  : (_gateTightness && _gateTightness.TIME4 != null ? _num(_gateTightness.TIME4, 0) : 0);
   const aln = Math.max(2, Math.min(4, Math.round(2 + timeTight * 2)));
   return { wps, conf, aln };
 }
