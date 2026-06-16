@@ -2837,7 +2837,7 @@ async function resetMarketNow(market) {
     refresh();
   } catch(e) {}
 }
-window.dashboard = { refresh, reset: () => {}, resetMarket, resetMarketNow, triggerCycle, toggleCommandCenter, adjustSL, adjustTrail, adjustTradeAmount, setStake, resetRisk, adjustAlignment, selectGateMarket, adjustGateWps, saveGateWps, adjustGateConf, saveGateConf, toggleEnginePanel, closeTrade, expandMarket, expandCrypto, expandActiveTrade, togglePause, setAllLive, setAllSim, toggleMarketLifecycle, toggleCategoryLifecycle, connectBroker };
+window.dashboard = { refresh, reset: () => {}, resetMarket, resetMarketNow, triggerCycle, toggleCommandCenter, adjustSL, adjustTrail, adjustTradeAmount, setStake, resetRisk, selectGateMarket, toggleEnginePanel, closeTrade, expandMarket, expandCrypto, expandActiveTrade, togglePause, setAllLive, setAllSim, toggleMarketLifecycle, toggleCategoryLifecycle, connectBroker };
 initTabs();
 initRiskParams();
 initGateSettings();

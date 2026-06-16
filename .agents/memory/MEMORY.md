@@ -3,4 +3,5 @@
 - [EODHD coverage](eodhd-coverage.md) — 7 stale markets (nzx50/mib/nikkei225/sensex/set/tadawul/jse) are an EODHD plan coverage limit, NOT a bug; symbols are correct, native exchanges just aren't in the plan.
 - [EODHD daily quota](eodhd-quota.md) — whole dashboard freezing mid-day (ALL markets 0 prices, cycles still firing) = EODHD 100k/day limit hit (HTTP 402); resets 00:00 UTC; 24/7 polling of 193 syms overruns it.
 - [Yahoo feed](yahoo-feed.md) — live feed migrated EODHD→Yahoo (yfinance) to escape the quota; free, batch yf.download, covers all 25 markets; pip needs --break-system-packages --target=.pythonlibs.
+- [Gate settings propagation](gate-settings-propagation.md) — Alignment & CONF reach the trade gates; per-market WPS does NOT (saved to top-level config.wps_threshold but loader/gate only read config.gates[...]).
 - [Dashboard price source](dashboard-price-source.md) — tile price comes from in-memory engine STATE (anchor stock, not index level), NOT the signals table; getMarketState must copy each live field from STATE explicitly.

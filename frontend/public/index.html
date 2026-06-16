@@ -598,6 +598,16 @@
       margin-bottom: 4px;
     }
     .gate-save-btn { padding: 5px 14px; }
+    .gate-readonly-note {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--amber);
+      letter-spacing: 0.03em;
+      line-height: 1.4;
+      margin: 2px 0 8px;
+      opacity: 0.85;
+    }
+    .gate-ro-val { color: var(--muted); cursor: default; }
     .stepper-controls {
       display: flex;
       align-items: center;
@@ -1322,50 +1332,33 @@
         </div>
       </div>
 
-      <!-- Gate Control -->
+      <!-- Gate Control (READ-ONLY — editing disabled pending propagation validation) -->
       <div>
-        <div class="ctrl-section-label">GATE CONTROL</div>
+        <div class="ctrl-section-label">GATE CONTROL · READ-ONLY</div>
+        <div class="gate-readonly-note">Editing disabled. Re-enabled once UI → DB → engine → gate propagation is verified for Alignment, WPS &amp; CONF.</div>
 
         <!-- 1. Alignment Required (global) -->
         <div class="stepper-row">
-          <span class="stepper-label">Alignment Required<span class="gate-help">Timeframes that must agree</span></span>
-          <div class="stepper-controls">
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustAlignment(-1)">−</button>
-            <span class="stepper-val" id="gate-aln-display">—</span>
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustAlignment(1)">+</button>
-          </div>
+          <span class="stepper-label">Alignment Required<span class="gate-help">Timeframes that must agree (global)</span></span>
+          <span class="stepper-val gate-ro-val" id="gate-aln-display">—</span>
         </div>
 
-        <!-- 2. Select Market -->
+        <!-- 2. View Market (read-only selector) -->
         <div class="stepper-row">
-          <span class="stepper-label">Select Market<span class="gate-help">Sets WPS &amp; CONF below</span></span>
+          <span class="stepper-label">View Market<span class="gate-help">Shows that market's saved values</span></span>
           <select id="gate-market-select" class="gate-select" onchange="window.dashboard && window.dashboard.selectGateMarket(this.value)"></select>
         </div>
 
         <!-- 3. WPS Threshold (per market) -->
         <div class="stepper-row">
           <span class="stepper-label">WPS Threshold<span class="gate-help">Min signal strength to trade</span></span>
-          <div class="stepper-controls">
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateWps(-1)">−</button>
-            <span class="stepper-val" id="gate-wps-display">—</span>
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateWps(1)">+</button>
-          </div>
-        </div>
-        <div class="gate-save-row">
-          <button class="action-btn gate-save-btn" onclick="window.dashboard && window.dashboard.saveGateWps()">Save WPS</button>
+          <span class="stepper-val gate-ro-val" id="gate-wps-display">—</span>
         </div>
 
         <!-- 4. CONF Threshold (per market) -->
         <div class="stepper-row">
           <span class="stepper-label">CONF Threshold<span class="gate-help">Min confidence to trade</span></span>
-          <div class="stepper-controls">
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateConf(-5)">−</button>
-            <span class="stepper-val" id="gate-conf-display">—</span>
-            <button class="stepper-btn" onclick="window.dashboard && window.dashboard.adjustGateConf(5)">+</button>
-          </div>
-        </div>
-        <div class="gate-save-row">
-          <button class="action-btn gate-save-btn" onclick="window.dashboard && window.dashboard.saveGateConf()">Save CONF</button>
+          <span class="stepper-val gate-ro-val" id="gate-conf-display">—</span>
         </div>
 
         <div id="gate-status" style="font-size:10px;color:var(--dim);letter-spacing:0.08em;min-height:14px;margin-top:6px;"></div>
@@ -1879,6 +1872,6 @@ async function saveCreds() {
 }
 </script>
 
-<script src="/public/dashboard-v61.js?v=20260616"></script>
+<script src="/public/dashboard-v61.js?v=20260616b"></script>
 </body>
 </html>
