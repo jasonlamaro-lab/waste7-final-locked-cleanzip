@@ -244,6 +244,8 @@ def _handle_get_market_state():
                 if mem.get("timeframes"):
                     entry["timeframes"] = mem["timeframes"]
                     entry["direction"]  = mem.get("direction")
+                if mem.get("price"):
+                    entry["price"] = mem["price"]
                 markets[r["market"]] = entry
         except Exception:
             pass
