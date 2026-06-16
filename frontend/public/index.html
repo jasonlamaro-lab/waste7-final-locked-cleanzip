@@ -882,21 +882,24 @@
     }
     .trade-row span { color:#ffffff; overflow:hidden; text-overflow:ellipsis; }
 
-    .mkt-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:6px; }
+    .mkt-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
     .mkt-tile {
-      background:#050505; border:1px solid #2b2b2b; border-radius:4px;
-      padding:7px 9px; cursor:pointer; display:flex; flex-direction:column; gap:5px;
-      color:#ffffff; font-size:12px; font-weight:900; line-height:1.15;
+      background:#050505; border:1px solid #2b2b2b; border-radius:5px;
+      padding:18px 22px; cursor:pointer; display:flex; flex-direction:column;
+      justify-content:space-between; gap:16px; min-height:150px;
+      color:#ffffff; font-weight:900; line-height:1.1;
       transition:border-color .12s, background .12s;
     }
     .mkt-tile:hover { border-color:#3d3d3d; background:#0a0a0a; }
-    .mkt-tile-head { display:flex; align-items:center; gap:8px; }
-    .mkt-name { color:#ffffff !important; font-weight:900; font-size:13px; white-space:nowrap; }
-    .mkt-signal { font-weight:900; letter-spacing:.04em; }
-    .mkt-price { color:#ffffff !important; margin-left:auto; font-weight:900; white-space:nowrap; }
-    .mkt-tile-metrics { display:flex; gap:5px; }
-    .mkt-tile-perf { display:flex; gap:10px; }
-    .mkt-stat { font-weight:900; white-space:nowrap; }
+    .mkt-tile-head { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+    .mkt-name { color:#ffffff !important; font-weight:900; font-size:22px; white-space:nowrap; }
+    .mkt-signal { font-weight:900; letter-spacing:.04em; font-size:20px; }
+    .mkt-price { color:#ffffff !important; font-weight:900; white-space:nowrap; font-size:22px; }
+    .mkt-tile-metrics { display:flex; gap:10px; }
+    .mkt-tile-metrics .op-metric { flex:1; padding:10px 8px; font-size:16px; }
+    .mkt-tile-metrics .op-arrow { font-size:17px; }
+    .mkt-tile-perf { display:flex; justify-content:space-between; gap:14px; }
+    .mkt-stat { font-weight:900; white-space:nowrap; font-size:19px; }
     .op-market { color:#ffffff !important; font-weight:900; }
     .op-price, .op-age { color:#ffffff !important; }
     .op-metric { padding:2px 5px; border-radius:3px; text-align:center; border:1px solid currentColor; }
