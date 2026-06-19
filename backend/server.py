@@ -1074,9 +1074,20 @@ def _save_market_config(conn, market: str, cfg: dict) -> None:
 
 
 def _handle_get_gate_settings(params=None):
-    """RPC wrapper for global + per-market gate settings."""
+    """RPC wrapper for global + per-market gate settings.
+    Always returns ALL canonical markets so the dropdown is fully populated
+    even for markets that have never traded and have no market_state row yet.
+    """
+    # Must match frontend EQUITY_MARKETS array order
+    ALL_MARKET_KEYS = [
+        'nasdaq100','sp500','dowjones','tsx','bovespa',
+        'ftse100','dax40','cac40','eurostoxx50','aex','ibex35','mib','omxs30','smi',
+        'nikkei225','hangseng','csi300','kospi','sensex','twse','set','asx200','nzx50',
+        'tadawul','jse',
+    ]
     try:
         from core.gates import load_settings
+        import json
         market = None
         inp = params[0] if isinstance(params, list) and params else params
         if isinstance(inp, dict):
@@ -1085,20 +1096,34 @@ def _handle_get_gate_settings(params=None):
             market = inp
         settings = load_settings(_normalise_market_key(market) if market else None)
 
+        # Ensure every canonical market has a DB row so WPS/CONF can be saved
+        rw = _get_rw_conn()
+        try:
+            for mk in ALL_MARKET_KEYS:
+                _ensure_market_state_row(rw, mk)
+            rw.commit()
+        finally:
+            rw.close()
+
         conn = _get_ro_conn()
         try:
-            rows = conn.execute("SELECT market, lifecycle, config FROM market_state ORDER BY market").fetchall()
-            markets = []
-            import json
+            rows = conn.execute("SELECT market, lifecycle, config FROM market_state").fetchall()
+            db_map = {}
             for r in rows:
                 cfg = {}
                 try:
                     cfg = json.loads(r["config"] or "{}") or {}
                 except Exception:
                     cfg = {}
-                markets.append({"market": r["market"], "lifecycle": r["lifecycle"], "config": cfg})
+                db_map[r["market"]] = {"lifecycle": r["lifecycle"], "config": cfg}
         finally:
             conn.close()
+
+        # Return in canonical order so dropdown matches frontend list
+        markets = []
+        for mk in ALL_MARKET_KEYS:
+            row = db_map.get(mk, {"lifecycle": "SIM", "config": {}})
+            markets.append({"market": mk, "lifecycle": row["lifecycle"], "config": row["config"]})
         return {"ok": True, "settings": settings, "markets": markets}
     except Exception as e:
         return {"ok": False, "error": str(e), "settings": {"gates": {}}}
