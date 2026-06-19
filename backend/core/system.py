@@ -92,6 +92,20 @@ def run_equity_cycle(price_data: dict) -> dict:
         if not engine:
             continue
         try:
+            # Only process markets whose exchange is currently open
+            try:
+                from engines.equity.market_hours import is_market_open
+                if not is_market_open(slug):
+                    STATE["markets"][engine.market_name] = {
+                        "signal": None, "wps": 0, "alignment": 0,
+                        "regime": "CLOSED", "confidence": 0,
+                        "timeframes": [], "stale": True,
+                        "reason": "exchange closed",
+                    }
+                    continue
+            except Exception:
+                pass
+
             symbols = list(engine.weights.keys())
             market_prices = {sym: price_data[sym] for sym in symbols if sym in price_data}
 
@@ -251,9 +265,27 @@ def run_system_cycle():
         except Exception as exc:
             logger.warning("update_open_trades failed: %s", exc)
 
+        # Only fetch symbols for markets that are currently open
         t_fetch = time.time()
-        price_data = fetch_all_equity_batch(_MASTER_SYMBOLS)
-        logger.info("Batch fetch complete: %d symbols in %.1fs", len(price_data), time.time() - t_fetch)
+        try:
+            from engines.equity.market_hours import is_market_open
+            open_symbols = []
+            seen_syms = set()
+            for slug in _ALL_EQUITY_SLUGS:
+                if is_market_open(slug):
+                    eng = EQUITY_ENGINE_MAP.get(slug)
+                    if eng:
+                        for sym in eng.weights.keys():
+                            if sym not in seen_syms:
+                                open_symbols.append(sym)
+                                seen_syms.add(sym)
+            symbols_to_fetch = open_symbols if open_symbols else _MASTER_SYMBOLS
+        except Exception:
+            symbols_to_fetch = _MASTER_SYMBOLS
+        price_data = fetch_all_equity_batch(symbols_to_fetch)
+        logger.info("Batch fetch complete: %d symbols (%d open markets) in %.1fs",
+                    len(price_data), len([s for s in _ALL_EQUITY_SLUGS if EQUITY_ENGINE_MAP.get(s)]),
+                    time.time() - t_fetch)
 
         market_results = run_equity_cycle(price_data)
         logger.info("Equity cycle complete: %d/%d markets updated", len(market_results), len(EQUITY_ENGINE_MAP))
