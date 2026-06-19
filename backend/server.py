@@ -1096,11 +1096,26 @@ def _handle_get_gate_settings(params=None):
             market = inp
         settings = load_settings(_normalise_market_key(market) if market else None)
 
-        # Ensure every canonical market has a DB row so WPS/CONF can be saved
+        # Ensure every canonical market has a DB row so WPS/CONF can be saved.
+        # Also seed wps_threshold=72 for any market that has no threshold saved yet,
+        # so new markets (e.g. TWSE) align with the rest of the platform immediately.
+        import json as _json
         rw = _get_rw_conn()
         try:
             for mk in ALL_MARKET_KEYS:
                 _ensure_market_state_row(rw, mk)
+                row = rw.execute("SELECT config FROM market_state WHERE market = ?", (mk,)).fetchone()
+                cfg_raw = (row["config"] if row else None) or "{}"
+                try:
+                    cfg_d = _json.loads(cfg_raw) or {}
+                except Exception:
+                    cfg_d = {}
+                if cfg_d.get("wps_threshold") is None:
+                    cfg_d["wps_threshold"] = 72.0
+                    rw.execute(
+                        "UPDATE market_state SET config = ? WHERE market = ?",
+                        (_json.dumps(cfg_d), mk)
+                    )
             rw.commit()
         finally:
             rw.close()
