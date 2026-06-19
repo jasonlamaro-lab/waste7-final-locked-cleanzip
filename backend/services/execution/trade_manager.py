@@ -9,7 +9,7 @@ from core.db import db_cursor
 from core.logger import logger
 
 TAKE_PROFIT_PCT = 999999.0  # disabled — exits via SL or TS only
-TIME_EXIT_MINUTES = 999999  # disabled — exits via SL or TS only
+TIME_EXIT_MINUTES = 15  # auto-close any trade after 15 minutes max
 
 
 def _read_risk_params(symbol: str = None):
@@ -192,11 +192,23 @@ def update_open_trades():
             and (peak_profit - current_profit) >= TS_dollars
         )
 
-        should_close = sl_hit or ts_hit
+        # Time exit — force-close any trade that has been open 15 minutes or more
+        time_hit = False
+        try:
+            created_str = trade.get("created_at") or ""
+            if created_str:
+                from datetime import timezone
+                created_dt = datetime.strptime(created_str[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                elapsed_mins = (datetime.now(timezone.utc) - created_dt).total_seconds() / 60.0
+                time_hit = elapsed_mins >= TIME_EXIT_MINUTES
+        except Exception as exc:
+            logger.warning("Time-exit check failed for trade %d: %s", trade_id, exc)
+
+        should_close = sl_hit or ts_hit or time_hit
 
         with db_cursor() as (conn, cursor):
             if should_close:
-                close_reason = "SL_HIT" if sl_hit else "TS_HIT"
+                close_reason = "SL_HIT" if sl_hit else ("TS_HIT" if ts_hit else "TIME_EXIT_15MIN")
 
                 # Broker close disabled — SIM-only mode, no live execution.
 

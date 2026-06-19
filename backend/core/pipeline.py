@@ -97,33 +97,6 @@ def _loss_cooldown_active(symbol: str) -> tuple[bool, int]:
     return False, 0
 
 
-def _global_cooldown_active() -> tuple[bool, int]:
-    """
-    Enforce a minimum 15-minute gap between ANY new trade across ALL markets.
-    Returns (cooldown_active, seconds_remaining).
-    """
-    COOLDOWN_SECONDS = 15 * 60  # 15 minutes
-    try:
-        with db_cursor() as (conn, cursor):
-            cursor.execute(
-                "SELECT created_at FROM trades ORDER BY id DESC LIMIT 1"
-            )
-            row = cursor.fetchone()
-        if not row:
-            return False, 0
-        from datetime import datetime, timezone
-        last_trade_str = row[0]
-        last_trade = datetime.strptime(last_trade_str[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-        now = datetime.now(timezone.utc)
-        elapsed = (now - last_trade).total_seconds()
-        remaining = COOLDOWN_SECONDS - elapsed
-        if remaining > 0:
-            return True, int(remaining)
-    except Exception as exc:
-        logger.warning("_global_cooldown_active check failed: %s", exc)
-    return False, 0
-
-
 def _open_trade_count() -> int:
     try:
         with db_cursor() as (conn, cursor):
@@ -169,15 +142,6 @@ def maybe_execute_trade(engine: str, symbol: str, side: str, price: float, reaso
 
     if _has_open_position(symbol):
         logger.info("Trade blocked: already have an open position on %s", symbol)
-        return None
-
-    # Global 15-minute cooldown — only one new trade allowed every 15 minutes across all markets
-    cooldown_global, secs_remaining = _global_cooldown_active()
-    if cooldown_global:
-        logger.info(
-            "Trade blocked: global 15-min cooldown active, %ds remaining (next trade allowed in %dm %ds)",
-            secs_remaining, secs_remaining // 60, secs_remaining % 60
-        )
         return None
 
     # Loss cooldown — delay re-entry after losses to avoid compounding bad conditions
