@@ -90,11 +90,14 @@ def record_cycle(market: str, symbols: list, price_data: dict) -> dict:
 
 
 def is_data_live(market: str) -> bool:
-    """True if the market has fresh, sufficient price data."""
+    """True if the market has fresh, sufficient price data.
+    On first cycle (no snapshot yet) we allow trading rather than blocking
+    indefinitely waiting for a quality record to exist.
+    """
     with _lock:
         snap = _quality.get(market)
     if not snap:
-        return False
+        return True  # no data yet — allow through, don't block on startup
     age = time.time() - snap.get("last_update_ts", 0)
     return snap["is_live"] and age < MAX_STALE_SECS
 

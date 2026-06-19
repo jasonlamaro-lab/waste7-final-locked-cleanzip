@@ -32,9 +32,9 @@ MAX_TIGHTNESS     = 0.40   # never tighten past here (keep gates permissive)
 
 # WPS gate auto-range: how many |WPS| points to raise/lower per run
 WPS_STEP          = 2.0
-WPS_FLOOR         = 5.0
-WPS_CEILING       = 30.0   # dashboard mode: live markets are commonly around 10–20; 40+ is too restrictive
-WPS_DEFAULT       = 10.0
+WPS_FLOOR         = 10.0
+WPS_CEILING       = 90.0   # raised: live markets regularly hit 70-100; old 30 cap was blocking valid signals
+WPS_DEFAULT       = 72.0   # aligned with platform standard threshold
 
 
 def _system_win_rate(window: int) -> tuple[float, int]:

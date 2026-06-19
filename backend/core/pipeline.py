@@ -39,14 +39,15 @@ def _loss_cooldown_active(symbol: str) -> tuple[bool, int]:
     """
     After a losing trade, enforce a cooldown before re-entering the same market.
     Cooldown scales with consecutive losses:
-      1 loss  → 15 min
-      2 losses → 30 min
-      3+ losses → 60 min
+      1 loss  → 5 min
+      2 losses → 10 min
+      3+ losses → 15 min
     Returns (cooldown_active, minutes_remaining).
     """
-    # Fixed 15-minute base cooldown on every market regardless of trade style.
-    # Prevents compounding losses by re-entering a losing market too quickly.
-    base_minutes = 15
+    # 5-minute base cooldown per loss. Scales with consecutive losses:
+    # 1 loss=5min, 2 losses=10min, 3+ losses=15min (capped).
+    # Prevents rapid re-entry after a loss without locking markets out for too long.
+    base_minutes = 5
 
     try:
         with db_cursor() as (conn, cursor):
