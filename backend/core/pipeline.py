@@ -44,13 +44,9 @@ def _loss_cooldown_active(symbol: str) -> tuple[bool, int]:
       3+ losses → 60 min
     Returns (cooldown_active, minutes_remaining).
     """
-    try:
-        from core.trade_style import get_style
-        style = get_style()
-        # SCALP gets shorter cooldowns — losses are expected more often
-        base_minutes = {"SCALP": 3, "SWING": 10, "HOLD": 20}.get(style["name"], 10)
-    except Exception:
-        base_minutes = 15
+    # Fixed 15-minute base cooldown on every market regardless of trade style.
+    # Prevents compounding losses by re-entering a losing market too quickly.
+    base_minutes = 15
 
     try:
         with db_cursor() as (conn, cursor):

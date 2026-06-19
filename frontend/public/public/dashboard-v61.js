@@ -2365,8 +2365,8 @@ let _gateGlobal = {};        // global gate settings { GATE: {tightness, range} 
 let _gateMarketCfg = {};     // market key -> config object from market_state
 let _gateSel = null;         // currently selected market key
 let _gateAln = 3;            // alignment required (2/3/4)
-let _gateWps = 10;           // working WPS threshold for selected market
-let _gateConf = 40;          // working CONF % for selected market
+let _gateWps = 10;           // working WPS threshold for selected market (base=10, tightness 0=10, 1=90)
+let _gateConf = 20;          // working CONF % for selected market (base=20%, tightness 0=20%, 1=55%)
 
 // Alignment number (2/3/4) <-> TIME4 tightness (0/0.5/1.0)
 function _alnToTight(aln) { return (Math.max(2, Math.min(4, aln)) - 2) / 2; }
@@ -2413,6 +2413,8 @@ function _loadGateMarket(key) {
   _renderGateControls();
 }
 async function initGateSettings() {
+  // Render defaults immediately so controls are never blank on load
+  _renderGateControls();
   try {
     const r = await rpcCall('getGateSettings');
     _gateGlobal = (r && r.settings && r.settings.gates) || {};
@@ -2426,7 +2428,10 @@ async function initGateSettings() {
     _populateGateMarketSelect();
     _loadGateMarket(_gateSel);
     _renderGateControls();
-  } catch(e) { _setGateStatus('GATE LOAD FAILED'); }
+  } catch(e) {
+    _setGateStatus('GATE LOAD FAILED — showing defaults');
+    _renderGateControls(); // still show defaults even on error
+  }
 }
 // 1. Alignment Required (per selected market, TIME4 gate)
 async function adjustAlignment(delta) {
